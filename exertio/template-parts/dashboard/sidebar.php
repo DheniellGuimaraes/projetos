@@ -347,9 +347,13 @@ $alt_id ='';
 				}
 
 				$map_url = is_string($map_url) ? trim($map_url) : '';
-				$map_is_valid = !empty($map_url) && wp_http_validate_url($map_url) && in_array(wp_parse_url($map_url, PHP_URL_SCHEME), array('http', 'https'), true);
+				$map_url = !empty($map_url) ? esc_url_raw($map_url) : '';
+				$map_scheme = strtolower((string) wp_parse_url($map_url, PHP_URL_SCHEME));
+				$map_is_valid = !empty($map_url) && wp_http_validate_url($map_url) && in_array($map_scheme, array('http', 'https'), true);
 				$open_in_new_tab = ($map_menu_target === 'new_tab');
-				$menu_href = $map_is_valid ? $map_url : add_query_arg('ext', 'edit-profile', get_the_permalink());
+				$dashboard_permalink = get_the_permalink();
+				$fallback_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'edit-profile', $dashboard_permalink) : home_url('/');
+				$menu_href = $map_is_valid ? $map_url : $fallback_href;
 				$target_attr = ($map_is_valid && $open_in_new_tab) ? '_blank' : '_self';
 				$rel_attr = ($map_is_valid && $open_in_new_tab) ? 'noopener noreferrer' : '';
 			?>
