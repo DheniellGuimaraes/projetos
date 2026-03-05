@@ -66,8 +66,26 @@ $alt_id ='';
 	} else {
 		$employer_sidebar_items = $raw_employer_sidebar_items;
 		if (!array_key_exists('RmaMapDirectory', $employer_sidebar_items)) {
-			$employer_sidebar_items['RmaMapDirectory'] = $employer_sidebar_custom_labels['RmaMapDirectory'];
+			$map_injected_sidebar_items = array();
+			$map_item_inserted = false;
+			foreach ($employer_sidebar_items as $menu_key => $menu_value) {
+				$map_injected_sidebar_items[$menu_key] = $menu_value;
+				if ($menu_key === 'Services') {
+					$map_injected_sidebar_items['RmaMapDirectory'] = $employer_sidebar_custom_labels['RmaMapDirectory'];
+					$map_item_inserted = true;
+				}
+			}
+			if (!$map_item_inserted) {
+				$map_injected_sidebar_items['RmaMapDirectory'] = $employer_sidebar_custom_labels['RmaMapDirectory'];
+			}
+			$employer_sidebar_items = $map_injected_sidebar_items;
 		}
+	}
+
+	if (array_key_exists('Logout', $employer_sidebar_items)) {
+		$logout_item_label = $employer_sidebar_items['Logout'];
+		unset($employer_sidebar_items['Logout']);
+		$employer_sidebar_items['Logout'] = $logout_item_label;
 	}
 
 	foreach($employer_sidebar_items as $key => $val)
