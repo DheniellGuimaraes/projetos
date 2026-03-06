@@ -10813,12 +10813,12 @@ if (!function_exists('rma_map_normalize_request_params')) {
 		$state = isset($request_params['state']) ? strtolower(sanitize_text_field($request_params['state'])) : '';
 		$city = isset($request_params['city']) ? sanitize_text_field($request_params['city']) : '';
 		$search = isset($request_params['search']) ? sanitize_text_field($request_params['search']) : '';
-		$adimplencia = isset($request_params['adimplencia']) ? strtolower(sanitize_text_field($request_params['adimplencia'])) : 'adimplente';
+		$adimplencia = isset($request_params['adimplencia']) ? strtolower(sanitize_text_field($request_params['adimplencia'])) : 'all';
 		$page = isset($request_params['page']) ? absint($request_params['page']) : 1;
 		$per_page = isset($request_params['per_page']) ? absint($request_params['per_page']) : 25;
 
 		$state = in_array($state, rma_map_allowed_states(), true) ? $state : '';
-		$adimplencia = in_array($adimplencia, array('adimplente', 'inadimplente', 'all'), true) ? $adimplencia : 'adimplente';
+		$adimplencia = in_array($adimplencia, array('adimplente', 'inadimplente', 'all'), true) ? $adimplencia : 'all';
 		$page = max(1, $page);
 		$per_page = max(1, min(100, $per_page));
 
@@ -10886,7 +10886,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$page = $normalized['page'];
 		$per_page = $normalized['per_page'];
 
-		$cache_key = 'rma_map_entities_v' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cache_key = 'rma_map_entities_v3_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
 			return $cached_response;
@@ -11202,9 +11202,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					</select>
 					<input type="text" name="city" placeholder="<?php echo esc_attr__('Cidade', 'exertio_theme'); ?>" />
 					<select name="adimplencia">
+						<option value="all"><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
 						<option value="adimplente"><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
 						<option value="inadimplente"><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
-						<option value="all"><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
 					</select>
 					<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
 				</form>
@@ -11531,7 +11531,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					adimplenciaFilter.addEventListener('change', () => {
 						if (root.getAttribute('aria-busy') === 'true') return;
 						const normalizedAdimplencia = String(adimplenciaFilter.value || '').toLowerCase();
-						adimplenciaFilter.value = allowedAdimplencia.has(normalizedAdimplencia) ? normalizedAdimplencia : 'adimplente';
+						adimplenciaFilter.value = allowedAdimplencia.has(normalizedAdimplencia) ? normalizedAdimplencia : 'all';
 						clearTimeout(searchDebounce);
 						load(1);
 					});
