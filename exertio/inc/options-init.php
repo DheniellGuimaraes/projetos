@@ -11158,11 +11158,16 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		$per_page = max(1, min(100, absint($atts['per_page'])));
 		$states = array('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO');
 
-		$initial_data = rma_map_fetch_entities(rma_map_normalize_request_params(array(
-			'page' => 1,
+		$initial_params = rma_map_normalize_request_params(array(
+			'page' => isset($_GET['page']) ? wp_unslash($_GET['page']) : 1,
 			'per_page' => $per_page,
-			'adimplencia' => 'all',
-		)));
+			'search' => isset($_GET['search']) ? wp_unslash($_GET['search']) : '',
+			'state' => isset($_GET['state']) ? wp_unslash($_GET['state']) : '',
+			'city' => isset($_GET['city']) ? wp_unslash($_GET['city']) : '',
+			'adimplencia' => isset($_GET['adimplencia']) ? wp_unslash($_GET['adimplencia']) : 'all',
+		));
+		$initial_data = rma_map_fetch_entities($initial_params);
+		$initial_items = isset($initial_data['data']['items']) && is_array($initial_data['data']['items']) ? $initial_data['data']['items'] : array();
 		$initial_pagination = isset($initial_data['data']['pagination']) && is_array($initial_data['data']['pagination']) ? $initial_data['data']['pagination'] : array();
 		$initial_status_count = isset($initial_data['data']['status_count']) && is_array($initial_data['data']['status_count']) ? $initial_data['data']['status_count'] : array();
 		$initial_total = isset($initial_pagination['total']) ? absint($initial_pagination['total']) : 0;
@@ -11190,6 +11195,13 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-kpi{border:1px solid #e9edf2;border-radius:8px;padding:10px 12px;background:#fafcff}
 			.rma-map-kpi b{display:block;font-size:20px;line-height:1.2;color:#111827}
 			.rma-map-kpi span{font-size:12px;color:#5b6470}
+			.rma-map-directory{border:1px solid #e6ebf1;border-radius:20px;padding:18px;background:#fff;box-shadow:0 20px 40px rgba(15,23,42,.06)}
+			.rma-map-intro h3{font-size:34px;line-height:1.1;color:#0f172a;font-weight:800}
+			.rma-map-filters input,.rma-map-filters select{border:1px solid #d9e1ea;border-radius:12px;padding:0 12px;background:#fff;color:#0f172a}
+			.rma-map-filters button{border:0;border-radius:12px;background:#111827;color:#fff;font-weight:700}
+			.rma-map-results .rma-item{border:1px solid #e6ebf1;border-radius:16px;padding:14px;box-shadow:0 8px 18px rgba(2,6,23,.05)}
+			.rma-map-results .rma-item h4{margin:0 0 6px;font-size:16px;font-weight:800;color:#0f172a}
+			.rma-map-results .rma-item a{display:inline-block;margin-top:6px;font-weight:700;color:#2563eb}
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
 				<div class="rma-map-intro">
@@ -11202,24 +11214,38 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					<div class="rma-map-kpi"><b data-rma-kpi="inadimplente"><?php echo esc_html($initial_inadimplente); ?></b><span><?php echo esc_html__('Inadimplentes', 'exertio_theme'); ?></span></div>
 				</div>
 				<form class="rma-map-filters" onsubmit="return false;">
-					<input type="search" name="search" placeholder="<?php echo esc_attr__('Buscar ONG', 'exertio_theme'); ?>" />
+					<input type="search" name="search" placeholder="<?php echo esc_attr__('Buscar ONG', 'exertio_theme'); ?>" value="<?php echo esc_attr($initial_params['search']); ?>" />
 					<select name="state">
 						<option value=""><?php echo esc_html__('Todos os estados', 'exertio_theme'); ?></option>
 						<?php foreach ($states as $uf) : ?>
-							<option value="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></option>
+							<option value="<?php echo esc_attr(strtolower($uf)); ?>" <?php selected($initial_params['state'], strtolower($uf)); ?>><?php echo esc_html($uf); ?></option>
 						<?php endforeach; ?>
 					</select>
-					<input type="text" name="city" placeholder="<?php echo esc_attr__('Cidade', 'exertio_theme'); ?>" />
+					<input type="text" name="city" placeholder="<?php echo esc_attr__('Cidade', 'exertio_theme'); ?>" value="<?php echo esc_attr($initial_params['city']); ?>" />
 					<select name="adimplencia">
-						<option value="all"><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
-						<option value="adimplente"><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
-						<option value="inadimplente"><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
+						<option value="all" <?php selected($initial_params['adimplencia'], 'all'); ?>><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
+						<option value="adimplente" <?php selected($initial_params['adimplencia'], 'adimplente'); ?>><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
+						<option value="inadimplente" <?php selected($initial_params['adimplencia'], 'inadimplente'); ?>><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
 					</select>
 					<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
 				</form>
 				<div class="rma-map-feedback" aria-live="polite"></div>
 				<div class="rma-map-states"></div>
-				<div class="rma-map-results"></div>
+				<div class="rma-map-results">
+					<?php if (!empty($initial_items)) : ?>
+						<?php foreach ($initial_items as $initial_item) : ?>
+							<?php $initial_city_state = trim(((string) ($initial_item['city'] ?? '')) . ((string) ($initial_item['state'] ?? '') !== '' ? '/' . (string) ($initial_item['state'] ?? '') : ''), '/'); ?>
+							<article class="rma-item">
+								<h4><?php echo esc_html((string) ($initial_item['name'] ?? '')); ?></h4>
+								<p><?php echo esc_html($initial_city_state); ?></p>
+								<p><?php echo esc_html((string) ($initial_item['address'] ?? '')); ?></p>
+								<?php if (!empty($initial_item['profile_url'])) : ?><a href="<?php echo esc_url((string) $initial_item['profile_url']); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html__('Ver perfil', 'exertio_theme'); ?></a><?php endif; ?>
+							</article>
+						<?php endforeach; ?>
+					<?php else : ?>
+						<p><?php echo esc_html__('Nenhuma entidade encontrada.', 'exertio_theme'); ?></p>
+					<?php endif; ?>
+				</div>
 				<div class="rma-map-pagination"></div>
 			</div>
 			<script>
