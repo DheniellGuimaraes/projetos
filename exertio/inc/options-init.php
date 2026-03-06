@@ -10886,6 +10886,31 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$page = $normalized['page'];
 		$per_page = $normalized['per_page'];
 
+		if ($search === '') {
+			return array(
+				'success' => true,
+				'data' => array(
+					'items' => array(),
+					'pagination' => array(
+						'page' => 1,
+						'per_page' => $per_page,
+						'total' => 0,
+						'total_pages' => 0,
+					),
+					'filters' => array(
+						'state' => $state,
+						'city' => $city,
+						'search' => '',
+						'adimplencia' => $adimplencia,
+					),
+					'states_count' => array(),
+					'status_count' => array('adimplente' => 0, 'inadimplente' => 0),
+					'requires_search' => true,
+					'generated_at' => gmdate('c'),
+				),
+			);
+		}
+
 		$cache_key = 'rma_map_entities_v4_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
@@ -11144,6 +11169,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			'city' => isset($_GET['city']) ? wp_unslash($_GET['city']) : '',
 			'adimplencia' => isset($_GET['adimplencia']) ? wp_unslash($_GET['adimplencia']) : 'all',
 		));
+		$has_initial_search = trim((string) $initial_params['search']) !== '';
 		$initial_data = rma_map_fetch_entities($initial_params);
 		$initial_items = isset($initial_data['data']['items']) && is_array($initial_data['data']['items']) ? $initial_data['data']['items'] : array();
 		$initial_pagination = isset($initial_data['data']['pagination']) && is_array($initial_data['data']['pagination']) ? $initial_data['data']['pagination'] : array();
@@ -11180,6 +11206,11 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-results .rma-item{border:1px solid #e6ebf1;border-radius:16px;padding:14px;box-shadow:0 8px 18px rgba(2,6,23,.05)}
 			.rma-map-results .rma-item h4{margin:0 0 6px;font-size:16px;font-weight:800;color:#0f172a}
 			.rma-map-results .rma-item a{display:inline-block;margin-top:6px;font-weight:700;color:#2563eb}
+			.rma-map-empty{padding:16px;border:1px dashed #cfd8e3;border-radius:12px;background:#f8fbff;color:#334155;font-weight:600}
+			.rma-map-brazil{margin:6px 0 14px;padding:14px;border:1px solid #e6ebf1;border-radius:14px;background:#f8fafc}
+			.rma-map-brazil h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#0f172a}
+			.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px}
+			.rma-map-brazil-grid button{border:1px solid #d6deea;border-radius:8px;background:#fff;color:#0f172a;font-size:12px;font-weight:700;height:34px}
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
 				<div class="rma-map-intro">
@@ -11208,9 +11239,19 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
 				</form>
 				<div class="rma-map-feedback" aria-live="polite"></div>
+				<div class="rma-map-brazil" aria-label="Mapa do Brasil">
+					<h4><?php echo esc_html__('Mapa do Brasil (selecione um estado)', 'exertio_theme'); ?></h4>
+					<div class="rma-map-brazil-grid">
+						<?php foreach ($states as $uf) : ?>
+							<button type="button" data-uf="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></button>
+						<?php endforeach; ?>
+					</div>
+				</div>
 				<div class="rma-map-states"></div>
 				<div class="rma-map-results">
-					<?php if (!empty($initial_items)) : ?>
+					<?php if (!$has_initial_search) : ?>
+						<p class="rma-map-empty"><?php echo esc_html__('Digite um termo de busca e clique em Aplicar para exibir as entidades.', 'exertio_theme'); ?></p>
+					<?php elseif (!empty($initial_items)) : ?>
 						<?php foreach ($initial_items as $initial_item) : ?>
 							<?php $initial_city_state = trim(((string) ($initial_item['city'] ?? '')) . ((string) ($initial_item['state'] ?? '') !== '' ? '/' . (string) ($initial_item['state'] ?? '') : ''), '/'); ?>
 							<article class="rma-item">
@@ -11239,6 +11280,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				const applyButton = root.querySelector('.rma-map-apply');
 				const feedback = root.querySelector('.rma-map-feedback');
 				const statesBox = root.querySelector('.rma-map-states');
+				const brazilMapGrid = root.querySelector('.rma-map-brazil-grid');
 				const results = root.querySelector('.rma-map-results');
 				const pagination = root.querySelector('.rma-map-pagination');
 				const totalKpi = root.querySelector('[data-rma-kpi="total"]');
@@ -11360,9 +11402,20 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						.slice(0, maxLength);
 				}
 
-				function renderItems(items){
+				function getNormalizedSearchTerm(){
+					if (!searchInput) return '';
+					const safeSearch = normalizeFilterText(searchInput.value || '', 120);
+					searchInput.value = safeSearch;
+					return safeSearch;
+				}
+
+				function renderItems(items, hasSearch){
+					if(!hasSearch){
+						results.innerHTML = '<p class="rma-map-empty"><?php echo esc_js(__('Digite um termo de busca e clique em Aplicar para exibir as entidades.', 'exertio_theme')); ?></p>';
+						return;
+					}
 					if(!items.length){
-						results.innerHTML = '<p><?php echo esc_js(__('Nenhuma entidade encontrada.', 'exertio_theme')); ?></p>';
+						results.innerHTML = '<p class="rma-map-empty"><?php echo esc_js(__('Nenhuma entidade encontrada para a busca informada.', 'exertio_theme')); ?></p>';
 						return;
 					}
 					results.innerHTML = items.map(item => {
@@ -11394,6 +11447,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const params = new URLSearchParams();
 					params.set('page', String(safePage));
 					params.set('per_page', String(perPage));
+					const searchTerm = getNormalizedSearchTerm();
 					for (const [k,v] of fd.entries()) {
 						const normalizedValue = String(v || '').trim();
 						if (!normalizedValue) continue;
@@ -11413,6 +11467,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const safeText = normalizeFilterText(normalizedValue, textLimit);
 						if (!safeText) continue;
 						params.set(k, safeText);
+					}
+					if (!searchTerm) {
+						feedback.textContent = '<?php echo esc_js(__('Digite uma busca para listar entidades.', 'exertio_theme')); ?>';
+						renderSummary(null, null);
+						renderStates({}, '');
+						renderItems([], false);
+						renderPagination(null);
+						setBusy(false);
+						return;
 					}
 					const paramsString = params.toString();
 					if (window.history && window.history.replaceState) {
@@ -11451,7 +11514,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						feedback.textContent = '';
 						renderSummary(data.data.pagination || null, data.data.status_count || null);
 						renderStates(data.data.states_count || {}, data.data.filters ? data.data.filters.state : '');
-						renderItems(data.data.items || []);
+						renderItems(data.data.items || [], true);
 						renderPagination(data.data.pagination || null);
 						currentPage = safePage;
 					} catch (e) {
@@ -11462,7 +11525,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						feedback.textContent = '<?php echo esc_js(__('Falha ao carregar entidades do mapa.', 'exertio_theme')); ?>';
 						renderSummary(null, null);
 						statesBox.innerHTML = '';
-						results.innerHTML = '';
+						renderItems([], !!getNormalizedSearchTerm());
 						pagination.innerHTML = '';
 					} finally {
 						if(requestId === activeRequestId) {
@@ -11502,43 +11565,32 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					if (!/^[a-z]{2}$/.test(uf)) return;
 					if (stateFilter.value === uf && currentPage === 1) return;
 					stateFilter.value = uf;
-					clearTimeout(searchDebounce);
-					load(1);
+					feedback.textContent = '<?php echo esc_js(__('Clique em Aplicar para atualizar os resultados.', 'exertio_theme')); ?>';
 				});
 
 				let searchDebounce;
 				const searchInput = filtersForm.querySelector('input[name="search"]');
 				const cityInput = filtersForm.querySelector('input[name="city"]');
-				const scheduleLoad = () => {
-					if (root.getAttribute('aria-busy') === 'true') {
-						hasPendingReload = true;
-						return;
-					}
-					if (searchInput) {
-						searchInput.value = normalizeFilterText(searchInput.value, 120);
-					}
-					if (cityInput) {
-						cityInput.value = normalizeFilterText(cityInput.value, 80);
-					}
-					clearTimeout(searchDebounce);
-					searchDebounce = setTimeout(() => load(1), 350);
-				};
-				if (searchInput) {
-					searchInput.addEventListener('input', scheduleLoad);
-				}
-				if (cityInput) {
-					cityInput.addEventListener('input', scheduleLoad);
-				}
-
 				const stateFilter = filtersForm.querySelector('select[name="state"]');
 				const adimplenciaFilter = filtersForm.querySelector('select[name="adimplencia"]');
+
+				if (brazilMapGrid) {
+					brazilMapGrid.addEventListener('click', (ev) => {
+						const stateButton = ev.target.closest('button[data-uf]');
+						if (!stateButton || !stateFilter) return;
+						const uf = String(stateButton.dataset.uf || '').toLowerCase();
+						if (!/^[a-z]{2}$/.test(uf)) return;
+						stateFilter.value = uf;
+						feedback.textContent = '<?php echo esc_js(__('Estado selecionado. Clique em Aplicar para buscar.', 'exertio_theme')); ?>';
+					});
+				}
+
 				if (stateFilter) {
 					stateFilter.addEventListener('change', () => {
 						if (root.getAttribute('aria-busy') === 'true') return;
 						const normalizedState = String(stateFilter.value || '').toLowerCase();
 						stateFilter.value = /^[a-z]{2}$/.test(normalizedState) ? normalizedState : '';
-						clearTimeout(searchDebounce);
-						load(1);
+						feedback.textContent = '<?php echo esc_js(__('Clique em Aplicar para atualizar os resultados.', 'exertio_theme')); ?>';
 					});
 				}
 				if (adimplenciaFilter) {
@@ -11546,8 +11598,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (root.getAttribute('aria-busy') === 'true') return;
 						const normalizedAdimplencia = String(adimplenciaFilter.value || '').toLowerCase();
 						adimplenciaFilter.value = allowedAdimplencia.has(normalizedAdimplencia) ? normalizedAdimplencia : 'all';
-						clearTimeout(searchDebounce);
-						load(1);
+						feedback.textContent = '<?php echo esc_js(__('Clique em Aplicar para atualizar os resultados.', 'exertio_theme')); ?>';
 					});
 				}
 
@@ -11571,7 +11622,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					clearTimeout(searchDebounce);
 				});
 
-				load(currentPage);
+				if (getNormalizedSearchTerm()) {
+					load(currentPage);
+				} else {
+					feedback.textContent = '<?php echo esc_js(__('Digite uma busca e clique em Aplicar para iniciar.', 'exertio_theme')); ?>';
+					renderItems([], false);
+					renderPagination(null);
+					renderStates({}, '');
+					renderSummary(null, null);
+				}
 			})();
 			</script>
 		<?php
