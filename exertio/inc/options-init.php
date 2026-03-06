@@ -10808,7 +10808,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$page = max(1, $page);
 		$per_page = max(1, min(100, $per_page));
 
-		$cache_key = 'rma_map_entities_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cache_key = 'rma_map_entities_v' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
 			return $cached_response;
@@ -10821,6 +10821,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 			'orderby' => 'date',
 			'order' => 'DESC',
 			'fields' => 'ids',
+			'no_found_rows' => true,
 		);
 
 		if ($search !== '') {
@@ -10932,4 +10933,134 @@ if (!function_exists('rma_map_entities_template_redirect')) {
 		wp_send_json($response);
 	}
 	add_action('template_redirect', 'rma_map_entities_template_redirect');
+}
+
+if (!function_exists('rma_map_get_cache_version')) {
+	function rma_map_get_cache_version()
+	{
+		$version = (int) get_option('rma_map_cache_version', 1);
+		return $version > 0 ? $version : 1;
+	}
+}
+
+if (!function_exists('rma_map_bump_cache_version')) {
+	function rma_map_bump_cache_version($post_id = 0)
+	{
+		if (!empty($post_id) && get_post_type($post_id) !== 'employer') {
+			return;
+		}
+
+		$version = rma_map_get_cache_version();
+		update_option('rma_map_cache_version', $version + 1, false);
+	}
+	add_action('save_post_employer', 'rma_map_bump_cache_version');
+}
+
+if (!function_exists('rma_map_directory_shortcode')) {
+	function rma_map_directory_shortcode($atts = array())
+	{
+		$atts = shortcode_atts(array(
+			'per_page' => 12,
+		), $atts, 'rma_map_directory');
+
+		$endpoint = esc_url(rest_url('rma/v1/map/entities'));
+		$per_page = max(1, min(100, absint($atts['per_page'])));
+		$states = array('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO');
+
+		ob_start();
+		?>
+		<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
+			<form class="rma-map-filters" onsubmit="return false;">
+				<input type="search" name="search" placeholder="<?php echo esc_attr__('Buscar ONG', 'exertio_theme'); ?>" />
+				<select name="state">
+					<option value=""><?php echo esc_html__('Todos os estados', 'exertio_theme'); ?></option>
+					<?php foreach ($states as $uf) : ?>
+						<option value="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<input type="text" name="city" placeholder="<?php echo esc_attr__('Cidade', 'exertio_theme'); ?>" />
+				<select name="adimplencia">
+					<option value="adimplente"><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
+					<option value="inadimplente"><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
+					<option value="all"><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
+				</select>
+				<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
+			</form>
+			<div class="rma-map-feedback" aria-live="polite"></div>
+			<div class="rma-map-results"></div>
+			<div class="rma-map-pagination"></div>
+		</div>
+		<script>
+		(function(){
+			const root = document.currentScript.previousElementSibling;
+			if (!root) return;
+			const endpoint = root.dataset.endpoint;
+			const perPage = parseInt(root.dataset.perPage || '12', 10);
+			const filtersForm = root.querySelector('.rma-map-filters');
+			const feedback = root.querySelector('.rma-map-feedback');
+			const results = root.querySelector('.rma-map-results');
+			const pagination = root.querySelector('.rma-map-pagination');
+			let currentPage = 1;
+
+			function renderItems(items){
+				if(!items.length){
+					results.innerHTML = '<p><?php echo esc_js(__('Nenhuma entidade encontrada.', 'exertio_theme')); ?></p>';
+					return;
+				}
+				results.innerHTML = items.map(item => {
+					const city = item.city ? item.city + '/' + item.state : item.state;
+					return `<article class="rma-item"><h4>${item.name}</h4><p>${city}</p><p>${item.address || ''}</p><a href="${item.profile_url}" target="_blank" rel="noopener noreferrer"><?php echo esc_js(__('Ver perfil', 'exertio_theme')); ?></a></article>`;
+				}).join('');
+			}
+
+			function renderPagination(meta){
+				if(!meta || meta.total_pages <= 1){
+					pagination.innerHTML = '';
+					return;
+				}
+				const prev = meta.page > 1 ? `<button type="button" data-page="${meta.page - 1}"><?php echo esc_js(__('Anterior', 'exertio_theme')); ?></button>` : '';
+				const next = meta.page < meta.total_pages ? `<button type="button" data-page="${meta.page + 1}"><?php echo esc_js(__('Próximo', 'exertio_theme')); ?></button>` : '';
+				pagination.innerHTML = `${prev}<span>${meta.page} / ${meta.total_pages}</span>${next}`;
+			}
+
+			async function load(page = 1){
+				feedback.textContent = '<?php echo esc_js(__('Carregando mapa...', 'exertio_theme')); ?>';
+				const fd = new FormData(filtersForm);
+				const params = new URLSearchParams();
+				params.set('page', String(page));
+				params.set('per_page', String(perPage));
+				for (const [k,v] of fd.entries()) {
+					if (!v) continue;
+					if (k === 'adimplencia' && v === 'all') continue;
+					params.set(k, v);
+				}
+				try {
+					const res = await fetch(endpoint + '?' + params.toString(), { credentials: 'same-origin' });
+					const data = await res.json();
+					if(!data || !data.success){ throw new Error('invalid response'); }
+					feedback.textContent = '';
+					renderItems(data.data.items || []);
+					renderPagination(data.data.pagination || null);
+					currentPage = page;
+				} catch (e) {
+					feedback.textContent = '<?php echo esc_js(__('Falha ao carregar entidades do mapa.', 'exertio_theme')); ?>';
+					results.innerHTML = '';
+					pagination.innerHTML = '';
+				}
+			}
+
+			root.querySelector('.rma-map-apply').addEventListener('click', () => load(1));
+			pagination.addEventListener('click', (ev) => {
+				const btn = ev.target.closest('button[data-page]');
+				if(!btn) return;
+				load(parseInt(btn.dataset.page, 10));
+			});
+
+			load(currentPage);
+		})();
+		</script>
+		<?php
+		return ob_get_clean();
+	}
+	add_shortcode('rma_map_directory', 'rma_map_directory_shortcode');
 }
