@@ -1,0 +1,485 @@
+<?php
+$current_user_id = get_current_user_id();
+$pid = get_user_meta( $current_user_id, 'employer_id' , true );
+$account_status = get_user_meta( $current_user_id, '_account_status', true );
+global $exertio_theme_options;
+
+$user_info = get_userdata($current_user_id);
+$page_name ='';
+if(isset($_GET['ext']) && $_GET['ext'] !="")
+{
+	$page_name = $_GET['ext'];	
+}
+$alt_id ='';
+?>
+<nav class="sidebar sidebar-offcanvas" id="sidebar">
+    <ul class="nav">
+    <li class="profile ff">
+    	<div>
+            <span class="pro-img">
+            <?php
+                $pro_img_id = get_post_meta( $pid, '_profile_pic_attachment_id', true );
+                $pro_img = wp_get_attachment_image_src( $pro_img_id, 'thumbnail' );
+                
+
+				if(wp_attachment_is_image($pro_img_id))
+                {
+                    ?>
+                    <img src="<?php echo esc_url($pro_img[0]); ?>" alt="<?php echo esc_attr(get_post_meta($pro_img_id, '_wp_attachment_image_alt', TRUE)); ?>" class="img-fluid" loading="lazy">
+                    <?php
+                }
+                else
+                {
+                    ?>
+                    <img src="<?php echo esc_url($exertio_theme_options['employer_df_img']['url']); ?>" alt="<?php echo esc_attr(get_post_meta($alt_id, '_wp_attachment_image_alt', TRUE)); ?>" class="img-fluid" loading="lazy">
+                    <?php	
+                }
+            ?>
+            </span>
+        </div>
+        <h4 class="mt-4"><?php echo exertio_get_username('employer', $pid, 'badge', 'right'); ?></h4>
+        <p><?php echo esc_html($user_info->user_email); ?></p>
+      </li>
+	<?php
+		$employer_sidebar_custom_labels = array(
+		'Dashboard' => __('Gerenciador', 'exertio_theme'),
+		'Profile' => __('Minha Conta', 'exertio_theme'),
+		'Projects' => __('Documentos', 'exertio_theme'),
+		'Services' => __('Governança', 'exertio_theme'),
+		'CustomOffers' => __('Financeiro', 'exertio_theme'),
+		'chat_dashboard' => __('Notificações', 'exertio_theme'),
+		'ChatDashboard' => __('Chat RMA', 'exertio_theme'),
+		'RmaMapDirectory' => __('Mapa de ONGs', 'exertio_theme'),
+		'SavedServices' => __('Suporte', 'exertio_theme'),
+		'Logout' => __('Sair', 'exertio_theme'),
+	);
+
+	$raw_employer_sidebar_items = isset($exertio_theme_options['employer_dashboard_sidebar_sortable']) && is_array($exertio_theme_options['employer_dashboard_sidebar_sortable'])
+		? $exertio_theme_options['employer_dashboard_sidebar_sortable']
+		: array();
+	$raw_employer_sidebar_visible_items = array_filter($raw_employer_sidebar_items, function ($item_label) {
+		return $item_label !== '';
+	});
+
+	if (empty($raw_employer_sidebar_visible_items)) {
+		$employer_sidebar_items = $employer_sidebar_custom_labels;
+	} else {
+		$employer_sidebar_items = $raw_employer_sidebar_items;
+	}
+
+	$normalized_sidebar_items = array();
+	$map_menu_label = $employer_sidebar_custom_labels['RmaMapDirectory'];
+	$map_saved_label = array_key_exists('RmaMapDirectory', $employer_sidebar_items) ? $employer_sidebar_items['RmaMapDirectory'] : $map_menu_label;
+	$map_is_hidden = ($map_saved_label === '');
+
+	foreach ($employer_sidebar_items as $menu_key => $menu_value) {
+		if ($menu_key === 'RmaMapDirectory') {
+			continue;
+		}
+		$normalized_sidebar_items[$menu_key] = $menu_value;
+		if ($menu_key === 'Services' && !$map_is_hidden) {
+			$normalized_sidebar_items['RmaMapDirectory'] = $map_saved_label;
+		}
+	}
+
+	if (!$map_is_hidden && !array_key_exists('RmaMapDirectory', $normalized_sidebar_items)) {
+		$normalized_sidebar_items['RmaMapDirectory'] = $map_saved_label;
+	}
+
+	$employer_sidebar_items = $normalized_sidebar_items;
+
+	if (array_key_exists('Logout', $employer_sidebar_items)) {
+		$logout_item_label = $employer_sidebar_items['Logout'];
+		unset($employer_sidebar_items['Logout']);
+		$employer_sidebar_items['Logout'] = $logout_item_label;
+	}
+
+	foreach($employer_sidebar_items as $key => $val)
+		{
+			$employer_sidebar_hidden_items = array('FollowedFreelancers', 'FundDepositInvoices', 'Disputes', 'VerifyIdentity', 'Statements');
+			if(in_array($key, $employer_sidebar_hidden_items, true))
+			{
+				continue;
+			}
+
+			$menu_label = isset($employer_sidebar_custom_labels[$key]) ? $employer_sidebar_custom_labels[$key] : $val;
+			if($key == 'Dashboard' && $val != "")
+			{
+			?>
+				<li class="nav-item <?php if($page_name == 'dashboard') { echo 'active';} ?>">
+					<a class="nav-link" href="<?php echo get_the_permalink();?>">
+						<i class="fas fa-home menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					</a>
+				</li>
+			<?php
+			}
+			if (!empty($exertio_theme_options['referral_system']) && $exertio_theme_options['referral_system']) {
+
+				if ($key == 'Referral' && $val != "") {
+					?>
+					<li class="nav-item <?php if ($page_name == 'referral') {
+						echo 'active';
+					} ?>">
+						<a class="nav-link" href="<?php echo get_the_permalink(); ?>?ext=referral">
+							<i class="fas fa-gift menu-icon"></i>
+							<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+						</a>
+					</li>
+				<?php
+				}
+			}
+			if($key == 'Profile' && $val != "")
+			{
+			?>
+				<li class="nav-item <?php if($page_name == 'edit-profile') { echo 'active';} ?>">
+					<a class="nav-link" data-toggle="collapse" aria-expanded="false"  href="#profile" aria-controls="profile">
+					  <i class="fas fa-user menu-icon"></i>
+					  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					  <i class="fas fa-chevron-down menu-arrow"></i>
+					</a>
+					<div class="collapse <?php if($page_name == 'edit-profile' ){ echo 'show';} ?>" id="profile">
+					  <ul class="nav flex-column sub-menu">
+						<li class="nav-item <?php if($page_name == 'edit-profile') { echo 'active';} ?>"> <a class="nav-link" href="<?php  echo esc_url(get_permalink($pid)); ?>"> <?php echo esc_html__( 'View Profile', 'exertio_theme' ); ?> </a></li>
+						<li class="nav-item"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=edit-profile"> <?php echo esc_html__( 'Edit Profile', 'exertio_theme' ); ?> </a></li>
+					  </ul>
+					</div>
+				</li>
+			<?php
+			}
+			if(($exertio_theme_options['user_status_check'] == true && $account_status !='deactivate') || $exertio_theme_options['user_status_check'] == false){
+				if($key == 'Projects' && $val != "")
+				{
+				?>
+					<li class="nav-item <?php if($page_name == 'create-project' || $page_name == 'projects' || $page_name == 'ongoing-projects' || $page_name == 'expired-project' || $page_name == 'completed-projects' || $page_name == 'completed-project-detail' || $page_name == 'canceled-projects' || $page_name == 'pending-projects' || $page_name == 'project-propsals' || $page_name == 'ongoing-project' || $page_name == 'ongoing-project-detail' || $page_name == 'ongoing-project-proposals') { echo 'active';} ?>">
+						<a class="nav-link" data-toggle="collapse" href="#ui-basic" aria-expanded="false" aria-controls="ui-basic">
+						<i class="fas fa-briefcase menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+						<i class="fas fa-chevron-down menu-arrow"></i>
+						</a>
+						<div class="collapse <?php if($page_name == 'create-project' || $page_name == 'projects' || $page_name == 'expired-project' || $page_name == 'ongoing-projects' || $page_name == 'completed-projects' ||  $page_name == 'completed-project-detail' ||  $page_name == 'canceled-projects' || $page_name == 'pending-projects' || $page_name == 'project-propsals' || $page_name == 'ongoing-project' || $page_name == 'ongoing-project-detail' || $page_name == 'ongoing-project-proposals') { echo 'show';} ?>" id="ui-basic">
+						<ul class="nav flex-column sub-menu">
+							<li class="nav-item <?php if($page_name == 'create-project') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=create-project"><?php echo esc_html__( 'Create Project', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'projects') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=projects"><?php echo esc_html__( 'Posted Projects', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'pending-projects') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=pending-projects"><?php echo esc_html__( 'Pending Projects', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'ongoing-project') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=ongoing-project"><?php echo esc_html__( 'Ongoing Project', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'expired-project') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=expired-project"><?php echo esc_html__( 'Expired Project', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'completed-projects') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=completed-projects"><?php echo esc_html__( 'Completed Projects', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'canceled-projects') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=canceled-projects"><?php echo esc_html__( 'canceled Projects', 'exertio_theme' ); ?></a></li>
+							<li class="nav-item <?php if($page_name == 'disputed-projects') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=disputed-projects"><?php echo esc_html__( 'Disputed Projects', 'exertio_theme' ); ?></a></li>
+						</ul>
+						</div>
+					</li>
+				<?php
+				}
+			
+           if($key == 'Offers' && $val != "" && fl_framework_get_options('allow_projects_offers'))
+			{?>
+							<li class="nav-item <?php if($page_name == 'project-offers') { echo 'active';} ?>">
+					<a class="nav-link" data-toggle="collapse" href="#offers" aria-expanded="false" aria-controls="offers">
+                        <i class="fas fa-address-book  menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+						<i class="fas fa-chevron-down menu-arrow"></i>
+					 </a>
+						<div class="collapse <?php if($page_name == 'accepted-offers' || $page_name == 'rejected-offers' || $page_name == 'cancelled-offers') { echo 'show';} ?>" id="offers">
+					  <ul class="nav flex-column sub-menu">
+						<li class="nav-item <?php if($page_name == 'project-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=project-offers"><?php echo esc_html__( 'All offers', 'exertio_theme' ); ?> </a></li>
+						<li class="nav-item <?php if($page_name == 'accepted-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=accepted-offers"><?php echo esc_html__( 'Accepted offers', 'exertio_theme' ); ?> </a></li>
+						<li class="nav-item <?php if($page_name == 'rejected-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=rejected-offers"><?php echo esc_html__( 'Rejected Offers', 'exertio_theme' ); ?> </a></li>
+                        <li class="nav-item <?php if($page_name == 'cancelled-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=cancelled-offers"><?php echo esc_html__( 'cancelled offers', 'exertio_theme' ); ?></a></li>
+                      </ul>
+					</div>
+				</li>
+		<?php 	}
+     
+
+				if($key == 'Services' && $val != "")
+				{
+				?>
+					<li class="nav-item <?php if($page_name == 'ongoing-services' || $page_name == 'ongoing-service-detail' || $page_name == 'completed-services' || $page_name == 'completed-service-detail' || $page_name == 'canceled-services' || $page_name == 'canceled-service-detail') { echo 'active'; }?>">
+						<a class="nav-link" data-toggle="collapse" href="#services" aria-expanded="false" aria-controls="services">
+						<i class="fas fa-user-cog menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+						<i class="fas fa-chevron-down menu-arrow"></i>
+						</a>
+						<div class="collapse <?php if($page_name == 'ongoing-services' || $page_name == 'ongoing-service-detail' || $page_name == 'completed-services' || $page_name == 'completed-service-detail' || $page_name == 'canceled-services' || $page_name == 'canceled-service-detail') { echo 'show';}?>" id="services">
+						<ul class="nav flex-column sub-menu">
+							<li class="nav-item <?php if($page_name == 'ongoing-services') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=ongoing-services"><?php echo esc_html__( 'Ongoing Services', 'exertio_theme' ); ?> </a></li>
+							<li class="nav-item <?php if($page_name == 'completed-services') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=completed-services"><?php echo esc_html__( 'Completed Services', 'exertio_theme' ); ?> </a></li>
+							<li class="nav-item <?php if($page_name == 'canceled-services') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=canceled-services"><?php echo esc_html__( 'Canceled Services', 'exertio_theme' ); ?> </a></li>
+							<li class="nav-item <?php if($page_name == 'disputed-services') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=disputed-services"><?php echo esc_html__( 'Disputed Services', 'exertio_theme' ); ?></a></li>
+						</ul>
+						</div>
+					</li>
+				<?php
+				}
+			}
+			if($key == 'JobInvitations' && $val != "")
+			{
+				?>
+				<li class="nav-item <?php if($page_name == 'invitations') { echo 'active';} ?>">
+					<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=invitations">
+					  <i class="fas fa-bell menu-icon"></i>
+					  
+					  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					</a>
+				</li>	
+				<?php
+			}
+			
+
+			if($key == 'ChatDashboard' && $val != "")
+			{
+				if(in_array('whizz-chat/whizz-chat.php', apply_filters('active_plugins', get_option('active_plugins'))))
+				{
+					global $whizzChat_options;
+					$dashboard_page = isset($whizzChat_options['whizzChat-dashboard-page']) && $whizzChat_options['whizzChat-dashboard-page'] != '' ? $whizzChat_options['whizzChat-dashboard-page'] : 'javascript:void(0)';
+					if ($dashboard_page != '')
+					{
+						?>
+						<li class="nav-item">
+							<a class="nav-link" href="<?php echo esc_url(get_permalink($dashboard_page));?>" target="_blank">
+							  <i class="fas fa-comments menu-icon"></i>
+							  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+							</a>
+						</li>
+						<?php
+					}
+				}
+			}
+
+           	if($key == 'chat_dashboard' && $val != "")
+			{
+					$inbox_link   =  get_option('sb_plugin_options');
+				$inbox_link  =  isset($inbox_link['sb-dashboard-page']) ? get_the_permalink($inbox_link['sb-dashboard-page']) : home_url();
+
+               if(class_exists('SB_Chat')){
+                      ?>
+                     	<li class="nav-item">
+							<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=inbox">
+							  <i class="far fa-comment-dots  menu-icon"></i>
+							  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+							</a>
+						</li>
+
+
+                  <?php 
+                   }
+
+			}
+			if($key == 'SavedServices' && $val != "")
+			{
+			?>
+				<li class="nav-item <?php if($page_name == 'saved-services') { echo 'active';} ?>">
+					<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=saved-services">
+					  <i class="far fa-bookmark menu-icon"></i>
+					  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					</a>
+				</li>
+			<?php
+			}
+			if($key == 'FollowedFreelancers' && $val != "")
+			{
+			?>
+			<li class="nav-item <?php if($page_name == 'followed-freelancers') { echo 'active';} ?>">
+				<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=followed-freelancers">
+				  <i class="fas fa-share menu-icon"></i>
+				  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+				</a>
+			</li>
+			<?php
+			}
+			if(($exertio_theme_options['user_status_check'] == true && $account_status !='deactivate') || !is_super_admin($current_user_id)){
+				if($key == 'FundDepositInvoices' && $val != "")
+				{
+				?>
+					<li class="nav-item <?php if($page_name == 'invoices') { echo 'active';} ?>">
+						<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=invoices">
+						<i class="fas fa-receipt menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+						</a>
+					</li>
+				<?php
+				}
+			}
+			if($key == 'MeetingSettings' && $val != "")
+			{
+			?>
+				<li class="nav-item <?php if($page_name == 'meetings-settings') { echo 'active';} ?>">
+					<a class="nav-link" data-toggle="collapse" aria-expanded="false"  href="#meeting" aria-controls="meeting">
+					  <i class="fas fa-users menu-icon"></i>
+					  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					  <i class="fas fa-chevron-down menu-arrow"></i>
+					</a>
+					<div class="collapse <?php if($page_name == 'meetings-settings' ){ echo 'show';} ?>" id="meeting">
+					  <ul class="nav flex-column sub-menu">
+						<li class="nav-item <?php if($page_name == 'all-meetings') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=meetings-settings"> <?php echo esc_html__( 'Meetings Settings', 'exertio_theme' ); ?> </a></li>
+						<li class="nav-item"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=all-meetings"> <?php echo esc_html__( 'All Meetings', 'exertio_theme' ); ?> </a></li>
+					  </ul>
+					</div>
+				</li>
+			<?php
+			}
+			if(($exertio_theme_options['user_status_check'] == true && $account_status !='deactivate') || $exertio_theme_options['user_status_check'] == false){
+				if($key == 'Disputes' && $val != "")
+				{
+				?>
+					<li class="nav-item <?php if($page_name == 'disputes') { echo 'active';} ?>">
+						<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=disputes">
+						<i class="fas fa-shield-alt menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+						</a>
+					</li>
+				<?php
+				}
+			}
+			if($key == 'VerifyIdentity' && $val != "")
+			{
+			?>
+			<li class="nav-item <?php if($page_name == 'identity-verification') { echo 'active';} ?>">
+				<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=identity-verification">
+					<i class="fas fa-user-shield menu-icon"></i>
+					<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+				</a>
+			</li>
+			<?php
+			}
+			if($key == 'Statements' && $val != "")
+			{
+			?>
+			<li class="nav-item <?php if($page_name == 'statements') { echo 'active';} ?>">
+				<a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=statements">
+					<i class="far fa-list-alt menu-icon"></i>
+					<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+				</a>
+			</li>
+			<?php
+			}
+			if($key == 'RmaMapDirectory' && $val != "")
+			{
+				$extract_map_url_from_raw = static function ($raw_value) {
+					if (!is_string($raw_value)) {
+						return '';
+					}
+
+					$raw_value = trim($raw_value);
+					if ($raw_value === '') {
+						return '';
+					}
+
+					if (stripos($raw_value, '<iframe') !== false && preg_match('/src=["\']([^"\']+)["\']/i', $raw_value, $matches)) {
+						$raw_value = isset($matches[1]) ? trim((string) $matches[1]) : '';
+					}
+
+					if (strpos($raw_value, '//') === 0) {
+						$raw_value = 'https:' . $raw_value;
+					}
+
+					return $raw_value;
+				};
+
+				$map_directory_page_url = '';
+				if (function_exists('fl_framework_get_options')) {
+					$map_directory_page_url = fl_framework_get_options('rma_map_directory_page_url');
+				}
+				if (empty($map_directory_page_url) && isset($exertio_theme_options['rma_map_directory_page_url'])) {
+					$map_directory_page_url = $exertio_theme_options['rma_map_directory_page_url'];
+				}
+
+				$normalize_map_menu_url = static function ($raw_url) use ($extract_map_url_from_raw) {
+					$raw_url = $extract_map_url_from_raw($raw_url);
+					$raw_url = is_string($raw_url) ? trim($raw_url) : '';
+					if ($raw_url === '') {
+						return '';
+					}
+					if (ctype_digit($raw_url)) {
+						$page_link = get_permalink((int) $raw_url);
+						$raw_url = $page_link ? $page_link : '';
+					}
+					if ($raw_url === '') {
+						return '';
+					}
+					if ($raw_url[0] === '/') {
+						$raw_url = home_url($raw_url);
+					} elseif (!preg_match('/^https?:\/\//i', $raw_url) && strpos($raw_url, '.') !== false) {
+						$raw_url = 'https://' . ltrim($raw_url, '/');
+					} elseif (!preg_match('/^https?:\/\//i', $raw_url)) {
+						$raw_url = home_url('/' . ltrim($raw_url, '/'));
+					}
+					$normalized_url = esc_url_raw($raw_url);
+					$scheme = strtolower((string) wp_parse_url($normalized_url, PHP_URL_SCHEME));
+					if (empty($normalized_url) || !wp_http_validate_url($normalized_url) || !in_array($scheme, array('http', 'https'), true)) {
+						return '';
+					}
+					return $normalized_url;
+				};
+
+				$map_directory_page_url = $normalize_map_menu_url($map_directory_page_url);
+				$map_directory_page_is_valid = !empty($map_directory_page_url);
+				$dashboard_permalink = get_the_permalink();
+				$map_dashboard_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'rma-map-directory', $dashboard_permalink) : '';
+				$fallback_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'edit-profile', $dashboard_permalink) : home_url('/');
+
+				$menu_href = !empty($map_dashboard_href) ? $map_dashboard_href : $fallback_href;
+				if ($map_directory_page_is_valid) {
+					$menu_href = $map_directory_page_url;
+				} elseif (empty($menu_href)) {
+					$menu_href = home_url('/');
+				}
+				$target_attr = '_self';
+				$rel_attr = '';
+			?>
+				<li class="nav-item <?php if($page_name == 'rma-map-directory') { echo 'active';} ?>">
+					<a class="nav-link" href="<?php echo esc_url($menu_href); ?>" target="<?php echo esc_attr($target_attr); ?>"<?php echo $rel_attr ? ' rel="' . esc_attr($rel_attr) . '"' : ''; ?>>
+						<i class="fas fa-map-marked-alt menu-icon"></i>
+						<span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					</a>
+				</li>
+			<?php
+			}
+			if($key == 'Logout' && $val != "")
+			{
+			?>
+				<li class="nav-item">
+					<a class="nav-link" href="<?php echo wp_logout_url( get_the_permalink( $exertio_theme_options['login_page'] ) ); ?>">
+					  <i class="fas fa-sign-out-alt menu-icon"></i>
+					  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					</a>
+				</li>
+			<?php
+			}
+
+			//custom offers page 
+			$custom_offer_feature = fl_framework_get_options('custom_offer_option');
+			if($custom_offer_feature == 'yes'){
+			if($key == 'CustomOffers' && $val != "")
+			{
+			?>
+				<li class="nav-item <?php if($page_name == 'custom-offers') { echo 'active';} ?>">
+					<a class="nav-link" data-toggle="collapse" href="#custom" aria-expanded="false" aria-controls="custom">
+					<i class="fa-solid fa fa-handshake  menu-icon"></i>
+					  <span class="menu-title"><?php echo esc_html($menu_label); ?></span>
+					  <i class="fas fa-chevron-down menu-arrow"></i>
+					</a>
+					<div class="collapse <?php if($page_name == 'custom-offers') { echo 'show';} ?>" id="custom">
+					  <ul class="nav flex-column sub-menu">
+						<li class="nav-item <?php if($page_name == 'custom-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=custom-offers"><?php echo esc_html__( 'All offers', 'exertio_theme' ); ?></a></li>
+						
+                        <li class="nav-item <?php if($page_name == 'accepted-custom-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=accepted-custom-offers"><?php echo esc_html__( 'Accepted Offers', 'exertio_theme' ); ?></a></li>
+						<li class="nav-item <?php if($page_name == 'rejected-custom-offers') { echo 'active';} ?>"> <a class="nav-link" href="<?php echo esc_url(get_the_permalink());?>?ext=rejected-custom-offers"><?php echo esc_html__( 'Rejected Offers', 'exertio_theme' ); ?></a></li>
+                      </ul>
+					</div>
+				</li>
+			
+
+
+
+					
+			<?php
+			}
+		}
+
+		}
+		?>
+    </ul>
+</nav>
