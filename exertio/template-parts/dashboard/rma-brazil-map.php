@@ -39,7 +39,6 @@ $state_points = array(
 );
 
 $state_codes = array_keys($state_points);
-$state_codes_pattern = implode('|', array_map('preg_quote', $state_codes));
 $svg_file_path = trailingslashit(get_template_directory()) . 'images/brasil.svg';
 $svg_markup = '';
 
@@ -58,15 +57,27 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 			}
 		}
 
-		$tag_pattern = '/<(path|g|a)\b([^>]*)\bid="(' . $state_codes_pattern . ')"([^>]*)>(.*?)<\/\1>/is';
+		$tag_pattern = '/<(path|g|a)\b([^>]*)\bid="([^"]*)"([^>]*)>(.*?)<\/\1>/is';
 		$svg_markup = preg_replace_callback(
 			$tag_pattern,
 			function ($matches) {
 				$tag = strtolower((string) $matches[1]);
 				$attrs = (string) $matches[2] . (string) $matches[4];
-				$uf = strtolower((string) $matches[3]);
+				$raw_id = strtolower(trim((string) $matches[3]));
 				$content = (string) $matches[5];
-				$open = '<' . $tag . $attrs . ' id="state_shape_' . $uf . '">';
+
+				if (!preg_match('/(?:^|[_-])(ac|al|ap|am|ba|ce|df|es|go|ma|mt|ms|mg|pa|pb|pr|pe|pi|rj|rn|rs|ro|rr|sc|sp|se|to)(?:$|[_-])/i', $raw_id, $uf_match)) {
+					return $matches[0];
+				}
+
+				$uf = strtolower((string) $uf_match[1]);
+				if (strpos($attrs, 'id=') !== false) {
+					$attrs = preg_replace('/\bid="[^"]*"/i', 'id="state_shape_' . $uf . '"', $attrs, 1);
+				} else {
+					$attrs .= ' id="state_shape_' . $uf . '"';
+				}
+
+				$open = '<' . $tag . $attrs . '>';
 				$close = '</' . $tag . '>';
 				return '<g id="state_' . $uf . '" class="state" data-state="' . $uf . '">' . $open . $content . $close . '</g>';
 			},
@@ -81,13 +92,7 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 				continue;
 			}
 
-			$point = isset($state_points[$uf]) ? $state_points[$uf] : array(0, 0);
-			$svg_markup = preg_replace(
-				'/<\/svg>\s*$/i',
-				'<g id="state_' . $uf . '" class="state" data-state="' . $uf . '"><circle class="shape" cx="' . (float) $point[0] . '" cy="' . (float) $point[1] . '" r="14" fill="transparent" stroke="transparent" /></g></svg>',
-				$svg_markup,
-				1
-			);
+			continue;
 		}
 
 		if (stripos($svg_markup, 'id="rma-map-pins"') === false) {

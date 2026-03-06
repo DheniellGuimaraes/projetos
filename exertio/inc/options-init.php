@@ -11889,6 +11889,12 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const mapSvg = root.querySelector('.box-mapa svg#map, .box-mapa svg');
 					const mapPanel = root.querySelector('.rma-map-brazil');
 					let pinTooltip = null;
+					const mapDebugEnabled = true;
+
+					function mapDebug(){
+						if (!mapDebugEnabled || !window || !window.console) return;
+						console.log('[RMA MAP]', ...arguments);
+					}
 
 					function ensurePinTooltip(){
 						if (!mapPanel) return null;
@@ -12001,6 +12007,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					ensureMapGradients();
 					detectMapDimensions();
 					annotateSvgStates();
+					const debugStates = mapSvg ? mapSvg.querySelectorAll('.state[id^="state_"]') : [];
+					mapDebug('states found', debugStates.length);
+					mapDebug('has #rma-map-pins', !!(mapSvg && mapSvg.querySelector('#rma-map-pins')));
 
 
 				function getStateAnchorFromSvg(state){
@@ -12031,7 +12040,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						|| (payload && payload.map_markers)
 						|| [];
 
-					if (!Array.isArray(rawMarkers)) return [];
+					if (!Array.isArray(rawMarkers)) { mapDebug('resolveMapMarkers: invalid payload', rawMarkers); return []; }
+					mapDebug('resolveMapMarkers raw', rawMarkers.length, rawMarkers);
 
 					return rawMarkers.map((entity) => {
 						const uf = String((entity && (entity.uf || entity.state)) || '').trim().toUpperCase();
@@ -12092,8 +12102,16 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						mapSvg.appendChild(group);
 					}
 					group.innerHTML = '';
+					mapDebug('renderMapPins markers', markers.length);
 					markers.forEach((marker, idx) => {
 						if (!marker || String(marker.adimplencia || 'adimplente') !== 'adimplente') return;
+						const markerStateRaw = String((marker && (marker.state || marker.uf)) || '').trim();
+						const markerState = markerStateRaw.toLowerCase();
+						const debugStateEl = mapSvg ? mapSvg.querySelector('#state_' + markerState) : null;
+						mapDebug('marker uf/state', markerStateRaw, 'state el?', !!debugStateEl);
+						if (debugStateEl && typeof debugStateEl.getBBox === 'function') {
+							try { const b = debugStateEl.getBBox(); mapDebug('state bbox', markerState, b); } catch (err) { mapDebug('state bbox error', markerState, err); }
+						}
 						const coords = mapCoordsFromGeoOrState(marker);
 						if (!coords) return;
 						const jitterX = ((idx % 7) - 3) * 1.8;
@@ -12119,6 +12137,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							pin.addEventListener('mousemove', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
 							pin.addEventListener('mouseleave', hidePinTooltip);
 							group.appendChild(pin);
+							mapDebug('pin appended', markerStateRaw, x, y);
 						});
 				}
 
@@ -12194,6 +12213,23 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				});
 
 				renderMapPins(resolveMapMarkers({ data: { map_markers: initialMapMarkers } }));
+				if (mapSvg) {
+					let debugPinsGroup = mapSvg.querySelector('#rma-map-pins');
+					if (!debugPinsGroup) {
+						debugPinsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+						debugPinsGroup.setAttribute('id', 'rma-map-pins');
+						mapSvg.appendChild(debugPinsGroup);
+					}
+					const testPin = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+					testPin.setAttribute('cx', String(mapDimensions.minX + 40));
+					testPin.setAttribute('cy', String(mapDimensions.minY + 40));
+					testPin.setAttribute('r', '6');
+					testPin.setAttribute('fill', '#ef4444');
+					testPin.setAttribute('opacity', '0.9');
+					testPin.setAttribute('data-debug-pin', '1');
+					debugPinsGroup.appendChild(testPin);
+					mapDebug('debug test pin appended', mapDimensions.minX + 40, mapDimensions.minY + 40);
+				}
 				syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
 				if (searchInput && normalizeFilterText(searchInput.value || '', 120)) {
 					renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
