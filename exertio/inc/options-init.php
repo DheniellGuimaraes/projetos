@@ -11365,6 +11365,10 @@ if (!function_exists('rma_register_map_entities_rest_route')) {
 				}
 				$response['entities'] = $entities;
 				$response['items'] = $entities;
+				error_log('RMA MAP ENTITIES: ' . wp_json_encode($entities));
+				if (!defined('WP_DEBUG') || !WP_DEBUG || !defined('WP_DEBUG_LOG') || !WP_DEBUG_LOG) {
+					error_log('RMA MAP DEBUG WARNING: enable WP_DEBUG and WP_DEBUG_LOG.');
+				}
 				return rest_ensure_response($response);
 			},
 			'permission_callback' => '__return_true',
@@ -11822,6 +11826,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const contentType = (res.headers.get('content-type') || '').toLowerCase();
 						if (contentType && contentType.indexOf('json') === -1) { throw new Error('invalid content type'); }
 						const data = await res.json();
+							rmaMapLog('endpoint full response', data);
 						if(requestId !== activeRequestId){ return; }
 						if(!data || !data.success){ throw new Error('invalid response'); }
 							feedback.textContent = '';
@@ -11889,6 +11894,14 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const mapSvg = root.querySelector('.box-mapa svg#map, .box-mapa svg');
 					const mapPanel = root.querySelector('.rma-map-brazil');
 					let pinTooltip = null;
+
+					function rmaMapLog(){
+						if (window.RMA_MAP_DEBUG) {
+							console.log('[RMA MAP]', ...arguments);
+						}
+					}
+					rmaMapLog('init map pipeline');
+					rmaMapLog('svg #map exists', !!mapSvg);
 					function ensurePinTooltip(){
 						if (!mapPanel) return null;
 						if (pinTooltip && pinTooltip.isConnected) return pinTooltip;
@@ -11944,6 +11957,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 								width: Number(nativeViewBox.width),
 								height: Number(nativeViewBox.height)
 							};
+							rmaMapLog('svg viewBox', mapDimensions);
 							return;
 						}
 						const viewBox = String(mapSvg.getAttribute('viewBox') || '').trim().split(/\s+/);
@@ -11959,6 +11973,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 									width,
 									height
 								};
+								rmaMapLog('svg viewBox', mapDimensions);
 								return;
 							}
 						}
@@ -11966,6 +11981,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const attrHeight = Number(mapSvg.getAttribute('height'));
 						if (Number.isFinite(attrWidth) && attrWidth > 0 && Number.isFinite(attrHeight) && attrHeight > 0) {
 							mapDimensions = { minX: 0, minY: 0, width: attrWidth, height: attrHeight };
+							rmaMapLog('svg viewBox', mapDimensions);
 						}
 					}
 
@@ -12019,15 +12035,19 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					ensureMapGradients();
 					detectMapDimensions();
 					annotateSvgStates();
+					rmaMapLog('#rma-map-pins exists', !!(mapSvg && mapSvg.querySelector('#rma-map-pins')));
 
 				function getFixedStatePinCoords(state){
 					const normalizedState = String(state || '').trim().toUpperCase();
 					const point = statePinCoordinates[normalizedState] || null;
+					rmaMapLog('entity UF', normalizedState);
 					if (!point) return null;
+					rmaMapLog('base coords', normalizedState, point);
 					const scaleX = mapDimensions.width / stateCoordinatesBase.width;
 					const scaleY = mapDimensions.height / stateCoordinatesBase.height;
 					const x = mapDimensions.minX + (Number(point.x) * scaleX);
 					const y = mapDimensions.minY + (Number(point.y) * scaleY);
+					rmaMapLog('scaled coords', normalizedState, { x, y, scaleX, scaleY });
 					if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 					if (x < mapDimensions.minX || x > (mapDimensions.minX + mapDimensions.width) || y < mapDimensions.minY || y > (mapDimensions.minY + mapDimensions.height)) {
 						return null;
@@ -12049,6 +12069,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						|| [];
 
 					if (!Array.isArray(rawMarkers)) return [];
+					rmaMapLog('markers count', rawMarkers.length);
 
 					return rawMarkers.map((entity) => {
 						const uf = String((entity && (entity.uf || entity.state)) || '').trim().toUpperCase();
@@ -12108,6 +12129,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							pin.addEventListener('mousemove', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
 							pin.addEventListener('mouseleave', hidePinTooltip);
 							group.appendChild(pin);
+							rmaMapLog('appendChild pin ok', markerState, { x, y });
 						});
 				}
 
