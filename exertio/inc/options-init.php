@@ -10885,32 +10885,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$adimplencia = $normalized['adimplencia'];
 		$page = $normalized['page'];
 		$per_page = $normalized['per_page'];
-
-		if ($search === '') {
-			return array(
-				'success' => true,
-				'data' => array(
-					'items' => array(),
-					'pagination' => array(
-						'page' => 1,
-						'per_page' => $per_page,
-						'total' => 0,
-						'total_pages' => 0,
-					),
-					'filters' => array(
-						'state' => $state,
-						'city' => $city,
-						'search' => '',
-						'adimplencia' => $adimplencia,
-					),
-					'states_count' => array(),
-					'status_count' => array('adimplente' => 0, 'inadimplente' => 0),
-					'requires_search' => true,
-					'generated_at' => gmdate('c'),
-				),
-			);
-		}
-
+		$requires_search = ($search === '');
 		$cache_key = 'rma_map_entities_v4_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
@@ -11025,8 +11000,13 @@ if (!function_exists('rma_map_fetch_entities')) {
 		ksort($states_count);
 
 		$total = count($entities);
-		$offset = ($page - 1) * $per_page;
-		$paged_items = array_slice($entities, $offset, $per_page);
+		if ($requires_search) {
+			$page = 1;
+			$paged_items = array();
+		} else {
+			$offset = ($page - 1) * $per_page;
+			$paged_items = array_slice($entities, $offset, $per_page);
+		}
 
 		$response = array(
 			'success' => true,
@@ -11036,7 +11016,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 					'page' => $page,
 					'per_page' => $per_page,
 					'total' => $total,
-					'total_pages' => (int) ceil($total / $per_page),
+					'total_pages' => $requires_search ? 0 : (int) ceil($total / $per_page),
 				),
 				'filters' => array(
 					'state' => $state,
@@ -11046,6 +11026,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 				),
 				'states_count' => $states_count,
 				'status_count' => $status_count,
+				'requires_search' => $requires_search,
 				'generated_at' => gmdate('c'),
 			),
 		);
@@ -11211,6 +11192,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-brazil h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#0f172a}
 			.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px}
 			.rma-map-brazil-grid button{border:1px solid #d6deea;border-radius:8px;background:#fff;color:#0f172a;font-size:12px;font-weight:700;height:34px}
+			.rma-map-brazil-visual{display:flex;justify-content:center;align-items:center;padding:8px 0 12px}
+			.rma-map-brazil-visual svg{width:min(100%,420px);height:auto;display:block}
+			.rma-map-brazil-visual path{fill:#dbeafe;stroke:#3b82f6;stroke-width:2}
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
 				<div class="rma-map-intro">
@@ -11241,6 +11225,11 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				<div class="rma-map-feedback" aria-live="polite"></div>
 				<div class="rma-map-brazil" aria-label="Mapa do Brasil">
 					<h4><?php echo esc_html__('Mapa do Brasil (selecione um estado)', 'exertio_theme'); ?></h4>
+					<div class="rma-map-brazil-visual" aria-hidden="true">
+						<svg viewBox="0 0 320 280" role="presentation" focusable="false">
+							<path d="M79 32l36-18 40 14 30-10 33 16 26 39 37 31-13 38-34 18-5 37-25 20-11 32-29 8-28-13-27 18-39-9-18-29-40-9-26-31 6-29-22-24 13-31 27-7 13-37 26-14z" />
+						</svg>
+					</div>
 					<div class="rma-map-brazil-grid">
 						<?php foreach ($states as $uf) : ?>
 							<button type="button" data-uf="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></button>
@@ -11470,7 +11459,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					}
 					if (!searchTerm) {
 						feedback.textContent = '<?php echo esc_js(__('Digite uma busca para listar entidades.', 'exertio_theme')); ?>';
-						renderSummary(null, null);
 						renderStates({}, '');
 						renderItems([], false);
 						renderPagination(null);
@@ -11629,7 +11617,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					renderItems([], false);
 					renderPagination(null);
 					renderStates({}, '');
-					renderSummary(null, null);
 				}
 			})();
 			</script>
