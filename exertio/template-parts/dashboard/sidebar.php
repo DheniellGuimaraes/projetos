@@ -422,7 +422,7 @@ $alt_id ='';
 				$fallback_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'edit-profile', $dashboard_permalink) : home_url('/');
 
 				$menu_href = !empty($map_dashboard_href) ? $map_dashboard_href : $fallback_href;
-				if ($map_directory_page_is_valid) {
+				if (empty($menu_href) && $map_directory_page_is_valid) {
 					$menu_href = $map_directory_page_url;
 				} elseif (empty($menu_href)) {
 					$menu_href = home_url('/');
