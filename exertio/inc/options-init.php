@@ -11617,6 +11617,30 @@ if (!function_exists('rma_map_dashboard_ext_targeted_content')) {
 						return false;
 					}
 					container.innerHTML = contentHtml;
+					var scripts = container.querySelectorAll('script');
+					for (var si = 0; si < scripts.length; si++) {
+						var oldScript = scripts[si];
+						var newScript = document.createElement('script');
+						if (oldScript.src) {
+							newScript.src = oldScript.src;
+						}
+						if (oldScript.type) {
+							newScript.type = oldScript.type;
+						}
+						if (oldScript.noModule) {
+							newScript.noModule = true;
+						}
+						if (oldScript.defer) {
+							newScript.defer = true;
+						}
+						if (oldScript.async) {
+							newScript.async = true;
+						}
+						if (oldScript.textContent) {
+							newScript.text = oldScript.textContent;
+						}
+						oldScript.parentNode.replaceChild(newScript, oldScript);
+					}
 					injected = true;
 					return true;
 				};
