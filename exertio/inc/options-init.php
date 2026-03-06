@@ -10772,3 +10772,164 @@ if (!function_exists('change_defaults')) {
 		return $defaults;
 	}
 }
+
+if (!function_exists('rma_map_normalize_adimplencia')) {
+	function rma_map_normalize_adimplencia($post_id)
+	{
+		$raw_statuses = array(
+			get_post_meta($post_id, '_rma_adimplencia_status', true),
+			get_post_meta($post_id, '_rma_adimplente', true),
+			get_post_meta($post_id, '_rma_is_adimplente', true),
+		);
+
+		foreach ($raw_statuses as $status) {
+			$status = is_string($status) ? strtolower(trim($status)) : $status;
+			if (in_array($status, array('inadimplente', 'no', 'nao', 'não', '0', 0, false), true)) {
+				return 'inadimplente';
+			}
+			if (in_array($status, array('adimplente', 'yes', 'sim', '1', 1, true), true)) {
+				return 'adimplente';
+			}
+		}
+
+		return 'adimplente';
+	}
+}
+
+if (!function_exists('rma_map_fetch_entities')) {
+	function rma_map_fetch_entities($request_params = array())
+	{
+		$state = isset($request_params['state']) ? strtolower(sanitize_text_field($request_params['state'])) : '';
+		$city = isset($request_params['city']) ? sanitize_text_field($request_params['city']) : '';
+		$search = isset($request_params['search']) ? sanitize_text_field($request_params['search']) : '';
+		$adimplencia = isset($request_params['adimplencia']) ? strtolower(sanitize_text_field($request_params['adimplencia'])) : 'adimplente';
+		$page = isset($request_params['page']) ? absint($request_params['page']) : 1;
+		$per_page = isset($request_params['per_page']) ? absint($request_params['per_page']) : 25;
+		$page = max(1, $page);
+		$per_page = max(1, min(100, $per_page));
+
+		$cache_key = 'rma_map_entities_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cached_response = get_transient($cache_key);
+		if ($cached_response !== false) {
+			return $cached_response;
+		}
+
+		$query_args = array(
+			'post_type' => 'employer',
+			'post_status' => 'publish',
+			'posts_per_page' => -1,
+			'orderby' => 'date',
+			'order' => 'DESC',
+			'fields' => 'ids',
+		);
+
+		if ($search !== '') {
+			$query_args['s'] = $search;
+		}
+
+		$entity_query = new WP_Query($query_args);
+		$entities = array();
+
+		if (!empty($entity_query->posts)) {
+			foreach ($entity_query->posts as $employer_id) {
+				$lat = get_post_meta($employer_id, '_employer_latitude', true);
+				$lng = get_post_meta($employer_id, '_employer_longitude', true);
+				if ($lat === '' || $lng === '') {
+					continue;
+				}
+
+				$entity_state = strtolower((string) get_post_meta($employer_id, '_employer_state', true));
+				$entity_city = (string) get_post_meta($employer_id, '_employer_city', true);
+				$entity_adimplencia = rma_map_normalize_adimplencia($employer_id);
+
+				if ($state !== '' && $entity_state !== $state) {
+					continue;
+				}
+				if ($city !== '' && stripos($entity_city, $city) === false) {
+					continue;
+				}
+				if (in_array($adimplencia, array('adimplente', 'inadimplente'), true) && $entity_adimplencia !== $adimplencia) {
+					continue;
+				}
+
+				$entities[] = array(
+					'id' => (int) $employer_id,
+					'name' => get_the_title($employer_id),
+					'city' => $entity_city,
+					'state' => strtoupper($entity_state),
+					'address' => (string) get_post_meta($employer_id, '_employer_address', true),
+					'latitude' => (float) $lat,
+					'longitude' => (float) $lng,
+					'adimplencia' => $entity_adimplencia,
+					'profile_url' => get_permalink($employer_id),
+				);
+			}
+		}
+		wp_reset_postdata();
+
+		$total = count($entities);
+		$offset = ($page - 1) * $per_page;
+		$paged_items = array_slice($entities, $offset, $per_page);
+
+		$response = array(
+			'success' => true,
+			'data' => array(
+				'items' => $paged_items,
+				'pagination' => array(
+					'page' => $page,
+					'per_page' => $per_page,
+					'total' => $total,
+					'total_pages' => (int) ceil($total / $per_page),
+				),
+			),
+		);
+
+		set_transient($cache_key, $response, 5 * MINUTE_IN_SECONDS);
+		return $response;
+	}
+}
+
+if (!function_exists('rma_register_map_entities_rest_route')) {
+	function rma_register_map_entities_rest_route()
+	{
+		register_rest_route('rma/v1', '/map/entities', array(
+			'methods' => WP_REST_Server::READABLE,
+			'callback' => function ($request) {
+				$params = $request->get_params();
+				return rest_ensure_response(rma_map_fetch_entities($params));
+			},
+			'permission_callback' => '__return_true',
+		));
+	}
+	add_action('rest_api_init', 'rma_register_map_entities_rest_route');
+}
+
+if (!function_exists('rma_map_entities_rewrite_rule')) {
+	function rma_map_entities_rewrite_rule()
+	{
+		add_rewrite_rule('^map/entities/?$', 'index.php?rma_map_entities=1', 'top');
+	}
+	add_action('init', 'rma_map_entities_rewrite_rule');
+}
+
+if (!function_exists('rma_map_entities_query_vars')) {
+	function rma_map_entities_query_vars($vars)
+	{
+		$vars[] = 'rma_map_entities';
+		return $vars;
+	}
+	add_filter('query_vars', 'rma_map_entities_query_vars');
+}
+
+if (!function_exists('rma_map_entities_template_redirect')) {
+	function rma_map_entities_template_redirect()
+	{
+		if ((int) get_query_var('rma_map_entities') !== 1) {
+			return;
+		}
+
+		$response = rma_map_fetch_entities($_GET);
+		wp_send_json($response);
+	}
+	add_action('template_redirect', 'rma_map_entities_template_redirect');
+}

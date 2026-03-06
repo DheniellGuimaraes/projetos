@@ -65,22 +65,28 @@ $alt_id ='';
 		$employer_sidebar_items = $employer_sidebar_custom_labels;
 	} else {
 		$employer_sidebar_items = $raw_employer_sidebar_items;
-		if (!array_key_exists('RmaMapDirectory', $employer_sidebar_items)) {
-			$map_injected_sidebar_items = array();
-			$map_item_inserted = false;
-			foreach ($employer_sidebar_items as $menu_key => $menu_value) {
-				$map_injected_sidebar_items[$menu_key] = $menu_value;
-				if ($menu_key === 'Services') {
-					$map_injected_sidebar_items['RmaMapDirectory'] = $employer_sidebar_custom_labels['RmaMapDirectory'];
-					$map_item_inserted = true;
-				}
-			}
-			if (!$map_item_inserted) {
-				$map_injected_sidebar_items['RmaMapDirectory'] = $employer_sidebar_custom_labels['RmaMapDirectory'];
-			}
-			$employer_sidebar_items = $map_injected_sidebar_items;
+	}
+
+	$normalized_sidebar_items = array();
+	$map_menu_label = $employer_sidebar_custom_labels['RmaMapDirectory'];
+	$map_saved_label = array_key_exists('RmaMapDirectory', $employer_sidebar_items) ? $employer_sidebar_items['RmaMapDirectory'] : $map_menu_label;
+	$map_is_hidden = ($map_saved_label === '');
+
+	foreach ($employer_sidebar_items as $menu_key => $menu_value) {
+		if ($menu_key === 'RmaMapDirectory') {
+			continue;
+		}
+		$normalized_sidebar_items[$menu_key] = $menu_value;
+		if ($menu_key === 'Services' && !$map_is_hidden) {
+			$normalized_sidebar_items['RmaMapDirectory'] = $map_saved_label;
 		}
 	}
+
+	if (!$map_is_hidden && !array_key_exists('RmaMapDirectory', $normalized_sidebar_items)) {
+		$normalized_sidebar_items['RmaMapDirectory'] = $map_saved_label;
+	}
+
+	$employer_sidebar_items = $normalized_sidebar_items;
 
 	if (array_key_exists('Logout', $employer_sidebar_items)) {
 		$logout_item_label = $employer_sidebar_items['Logout'];
