@@ -11373,7 +11373,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				#map .state .shape,#map .state path,#map .state polygon,#map .state circle{cursor:pointer;transition:all .3s ease-in-out}
 				#map .state .label_icon_state{fill:#666;font-family:Arial,sans-serif;font-size:11px;line-height:12px;font-weight:400}
 				#map .state .label_state{display:none;font-family:Arial,sans-serif;font-size:14px;line-height:16px;font-weight:700;fill:#fff}
-				#map .model-davi .state .shape,#map .state path,#map .state polygon{fill:#ddd}
+				#map .model-davi .state .shape,#map .state path,#map .state polygon,#map path.state,#map polygon.state,#map circle.state,#map ellipse.state{fill:#ddd}
 				#map .model-davi .state .icon_state{fill:#284779}
 				#map .model-davi .state:hover .shape,
 				#map .model-davi .state.is-active .shape,
@@ -11789,12 +11789,17 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						mapSvg.querySelectorAll('[id]').forEach((node) => {
 							const rawId = String(node.getAttribute('id') || '').trim();
 							if (!rawId) return;
-							const normalized = rawId.replace(/^state[_-]?/i, '').toLowerCase();
+							let normalized = rawId.replace(/^state[_-]?/i, '').toLowerCase();
+							if (!knownUf.has(normalized)) {
+								const suffix = rawId.match(/(?:^|[_-])(ac|al|ap|am|ba|ce|df|es|go|ma|mt|ms|mg|pa|pb|pr|pe|pi|rj|rn|rs|ro|rr|sc|sp|se|to)$/i);
+								normalized = suffix ? String(suffix[1]).toLowerCase() : '';
+							}
 							if (!knownUf.has(normalized)) return;
-							if (!node.classList.contains('state')) node.classList.add('state');
-							if (!node.dataset.state) node.dataset.state = normalized;
-							node.setAttribute('tabindex', '0');
-							node.setAttribute('role', 'button');
+							const stateCarrier = node.closest('.state[data-state]') || node.closest('a') || node;
+							if (!stateCarrier.classList.contains('state')) stateCarrier.classList.add('state');
+							if (!stateCarrier.dataset.state) stateCarrier.dataset.state = normalized;
+							stateCarrier.setAttribute('tabindex', '0');
+							stateCarrier.setAttribute('role', 'button');
 						});
 					}
 
