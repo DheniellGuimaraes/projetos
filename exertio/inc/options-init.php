@@ -11050,7 +11050,8 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$page = $normalized['page'];
 		$per_page = $normalized['per_page'];
 		$normalized_city_filter = rma_map_normalize_search_text($city);
-		$cache_key = 'rma_map_entities_v8_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$requires_search = (trim($search) === '');
+		$cache_key = 'rma_map_entities_v9_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
 			return $cached_response;
@@ -11164,8 +11165,13 @@ if (!function_exists('rma_map_fetch_entities')) {
 		ksort($states_count);
 
 		$total = count($entities);
-		$offset = ($page - 1) * $per_page;
-		$paged_items = array_slice($entities, $offset, $per_page);
+		if ($requires_search) {
+			$page = 1;
+			$paged_items = array();
+		} else {
+			$offset = ($page - 1) * $per_page;
+			$paged_items = array_slice($entities, $offset, $per_page);
+		}
 
 		$response = array(
 			'success' => true,
@@ -11175,7 +11181,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 					'page' => $page,
 					'per_page' => $per_page,
 					'total' => $total,
-					'total_pages' => (int) ceil($total / $per_page),
+					'total_pages' => $requires_search ? 0 : (int) ceil($total / $per_page),
 				),
 				'filters' => array(
 					'state' => $state,
@@ -11185,7 +11191,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 				),
 				'states_count' => $states_count,
 				'status_count' => $status_count,
-				'requires_search' => false,
+				'requires_search' => $requires_search,
 				'generated_at' => gmdate('c'),
 			),
 		);
@@ -11309,6 +11315,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			'city' => isset($_GET['city']) ? wp_unslash($_GET['city']) : '',
 			'adimplencia' => isset($_GET['adimplencia']) ? wp_unslash($_GET['adimplencia']) : 'all',
 		));
+		$has_initial_search = trim((string) $initial_params['search']) !== '';
 		$initial_data = rma_map_fetch_entities($initial_params);
 		$initial_items = isset($initial_data['data']['items']) && is_array($initial_data['data']['items']) ? $initial_data['data']['items'] : array();
 		$initial_pagination = isset($initial_data['data']['pagination']) && is_array($initial_data['data']['pagination']) ? $initial_data['data']['pagination'] : array();
@@ -11356,7 +11363,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			#map .brazil-outline{fill:rgba(134,239,172,.18);stroke:#4d7c0f;stroke-width:1.5}
 			#map .state .shape{fill:#86efac;stroke:#4d7c0f;stroke-width:1}
 			#map .state .label_icon_state{fill:#14532d;font-family:Arial,sans-serif;font-size:11px;font-weight:700}
-			#map .model-davi .state:hover .shape,#map .model-davi .state.is-active .shape{fill:#22c55e !important}
+			#map .model-davi .state:hover .shape,#map .model-davi .state.is-active .shape{fill:#dc2626 !important}
 			#map .model-davi .state:hover .label_icon_state,#map .model-davi .state.is-active .label_icon_state{fill:#fff}
 			.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px;margin-top:8px}
 			.rma-map-brazil-grid button{border:1px solid #86efac;border-radius:8px;background:#fff;color:#14532d;font-size:12px;font-weight:700;height:34px}
@@ -11399,7 +11406,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				</div>
 				<div class="rma-map-states"></div>
 				<div class="rma-map-results">
-					<?php if (!empty($initial_items)) : ?>
+					<?php if (!$has_initial_search) : ?>
+						<p class="rma-map-empty"><?php echo esc_html__('Digite um termo de busca e clique em Aplicar para exibir as entidades.', 'exertio_theme'); ?></p>
+					<?php elseif (!empty($initial_items)) : ?>
 						<?php foreach ($initial_items as $initial_item) : ?>
 							<?php $initial_city_state = trim(((string) ($initial_item['city'] ?? '')) . ((string) ($initial_item['state'] ?? '') !== '' ? '/' . (string) ($initial_item['state'] ?? '') : ''), '/'); ?>
 							<article class="rma-item">
@@ -11594,6 +11603,10 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const params = new URLSearchParams();
 					params.set('page', String(safePage));
 					params.set('per_page', String(perPage));
+					const searchTerm = searchInput ? normalizeFilterText(searchInput.value || '', 120) : '';
+					if (searchInput) {
+						searchInput.value = searchTerm;
+					}
 					for (const [k,v] of fd.entries()) {
 						const normalizedValue = String(v || '').trim();
 						if (!normalizedValue) continue;
@@ -11613,6 +11626,14 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const safeText = normalizeFilterText(normalizedValue, textLimit);
 						if (!safeText) continue;
 						params.set(k, safeText);
+					}
+					if (!searchTerm) {
+						feedback.textContent = '<?php echo esc_js(__('Digite uma busca para listar entidades.', 'exertio_theme')); ?>';
+						renderItems([]);
+						renderPagination(null);
+						renderStates({}, stateFilter ? stateFilter.value : '');
+						setBusy(false);
+						return;
 					}
 					const paramsString = params.toString();
 					if (window.history && window.history.replaceState) {
@@ -11742,8 +11763,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const y = coords[1] + jitterY;
 						const pin = document.createElementNS(ns, 'path');
 						pin.setAttribute('d', `M ${x} ${y-10} C ${x-4} ${y-10}, ${x-7} ${y-7}, ${x-7} ${y-3} C ${x-7} ${y+3}, ${x} ${y+9}, ${x} ${y+9} C ${x} ${y+9}, ${x+7} ${y+3}, ${x+7} ${y-3} C ${x+7} ${y-7}, ${x+4} ${y-10}, ${x} ${y-10} Z`);
-						pin.setAttribute('fill', '#16a34a');
-						pin.setAttribute('stroke', '#14532d');
+						pin.setAttribute('fill', '#dc2626');
+						pin.setAttribute('stroke', '#7f1d1d');
 						pin.setAttribute('stroke-width', '0.8');
 						pin.setAttribute('class', 'rma-map-pin');
 						const title = document.createElementNS(ns, 'title');
@@ -11831,10 +11852,17 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 				renderMapPins(initialMapMarkers);
 				syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
-				renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
-				renderStates(<?php echo wp_json_encode($initial_states_count); ?>, (stateFilter && stateFilter.value) ? stateFilter.value : '');
-				renderPagination(<?php echo wp_json_encode($initial_pagination); ?>);
-				feedback.textContent = '';
+				if (searchInput && normalizeFilterText(searchInput.value || '', 120)) {
+					renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
+					renderStates(<?php echo wp_json_encode($initial_states_count); ?>, (stateFilter && stateFilter.value) ? stateFilter.value : '');
+					renderPagination(<?php echo wp_json_encode($initial_pagination); ?>);
+					feedback.textContent = '';
+				} else {
+					feedback.textContent = '<?php echo esc_js(__('Digite uma busca para listar entidades.', 'exertio_theme')); ?>';
+					renderItems([]);
+					renderPagination(null);
+					renderStates({}, (stateFilter && stateFilter.value) ? stateFilter.value : '');
+				}
 			})();
 			</script>
 		<?php

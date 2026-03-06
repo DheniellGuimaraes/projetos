@@ -40,7 +40,7 @@ $state_points = array(
     <svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="460" height="465" style="display:inline;">
         <g class="model-davi">
             <desc>Brasil</desc>
-            <path class="brazil-outline" d="M150 34l34-16 30 8 25-10 30 6 20 15 30 8 25 30 27 24-8 27 16 22-8 24-20 20-13 31-4 25 9 18-12 26-9 25-22 20-18 18 1 21-10 17-18 24-8 18-22 8-16 28-20 10-20-8-17 8-20-13-14-23-18-8-16-18 4-24-9-19-18-14 10-26 9-31-12-20 5-27-18-20 8-30 20-17 10-21 4-28 20-14z" />
+            <path class="brazil-outline" d="M74 136L100 124L120 98L146 84L178 58L210 48L240 56L268 46L300 52L320 68L350 74L374 102L398 124L390 150L406 170L396 198L378 220L366 252L356 286L364 312L350 340L334 370L312 392L298 416L274 438L256 454L232 460L212 448L194 454L172 440L156 418L132 404L114 382L120 356L108 336L86 318L96 288L104 252L90 230L96 198L74 174L82 148Z" />
             <?php foreach ($state_points as $uf => $point) : ?>
                 <a href="#" id="state_<?php echo esc_attr($uf); ?>" class="state" data-state="<?php echo esc_attr($uf); ?>" xlink:href="">
                     <desc id="description_<?php echo esc_attr($uf); ?>"><?php echo esc_html(strtoupper($uf)); ?></desc>
