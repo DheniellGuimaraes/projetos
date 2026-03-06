@@ -10862,11 +10862,49 @@ if (!function_exists('rma_map_meta_value')) {
 }
 
 
+if (!function_exists('rma_map_fold_text_ascii')) {
+	function rma_map_fold_text_ascii($text)
+	{
+		$text = is_scalar($text) ? (string) $text : '';
+		$text = wp_strip_all_tags($text);
+		$text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+		if (class_exists('Normalizer')) {
+			$normalized = Normalizer::normalize($text, Normalizer::FORM_D);
+			if (is_string($normalized)) {
+				$text = $normalized;
+			}
+		}
+
+		$text = remove_accents($text);
+
+		if (function_exists('iconv')) {
+			$iconv_text = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+			if (is_string($iconv_text) && $iconv_text !== '') {
+				$text = $iconv_text;
+			}
+		}
+
+		$manual_map = array(
+			'ª' => 'a', 'º' => 'o', '°' => 'o',
+			'ç' => 'c', 'Ç' => 'c',
+			'á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a',
+			'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+			'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+			'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+			'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+			'ñ' => 'n',
+		);
+		$text = strtr($text, $manual_map);
+
+		return strtolower($text);
+	}
+}
+
 if (!function_exists('rma_map_normalize_search_text')) {
 	function rma_map_normalize_search_text($text)
 	{
-		$text = is_scalar($text) ? (string) $text : '';
-		$text = strtolower(remove_accents(wp_strip_all_tags($text)));
+		$text = rma_map_fold_text_ascii($text);
 		$text = preg_replace('/[^a-z0-9]+/u', ' ', $text);
 		return preg_replace('/\s+/', ' ', trim($text));
 	}
