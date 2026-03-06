@@ -10857,6 +10857,7 @@ if (!function_exists('rma_map_normalize_search_text')) {
 	{
 		$text = is_scalar($text) ? (string) $text : '';
 		$text = strtolower(remove_accents(wp_strip_all_tags($text)));
+		$text = preg_replace('/[^a-z0-9]+/u', ' ', $text);
 		return preg_replace('/\s+/', ' ', trim($text));
 	}
 }
@@ -10869,7 +10870,16 @@ if (!function_exists('rma_map_search_matches_entity')) {
 			return true;
 		}
 		$haystack = rma_map_normalize_search_text(implode(' ', array_map('strval', $fields)));
-		return $haystack !== '' && strpos($haystack, $needle) !== false;
+		if ($haystack === '') {
+			return false;
+		}
+		$tokens = array_values(array_filter(explode(' ', $needle)));
+		foreach ($tokens as $token) {
+			if (strpos($haystack, $token) === false) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
 
@@ -11207,12 +11217,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-empty{padding:16px;border:1px dashed #cfd8e3;border-radius:12px;background:#f8fbff;color:#334155;font-weight:600}
 			.rma-map-brazil{margin:6px 0 14px;padding:14px;border:1px solid #e6ebf1;border-radius:14px;background:#f8fafc}
 			.rma-map-brazil h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#0f172a}
-			.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px}
-			.rma-map-brazil-grid button{border:1px solid #d6deea;border-radius:8px;background:#fff;color:#0f172a;font-size:12px;font-weight:700;height:34px}
-			.rma-map-brazil-visual{display:flex;justify-content:center;align-items:center;padding:8px 0 12px}
-			.rma-map-brazil-visual svg{width:min(100%,420px);height:auto;display:block}
-			.rma-map-brazil-visual path{fill:url(#rmaMapGradient);stroke:#4d7c0f;stroke-width:1.4;transition:all .25s ease}
-			.rma-map-brazil-visual path:hover{filter:brightness(1.05);stroke:#166534}
+			.box-mapa{position:relative;z-index:1;float:none;padding:8px 0 6px;display:flex;justify-content:center}
+			#map{display:block;max-width:460px;width:100%;height:auto}
+			#map .state{cursor:pointer}
+			#map .state .shape{fill:#bbf7d0;stroke:#4d7c0f;stroke-width:1}
+			#map .state .label_icon_state{fill:#14532d;font-family:Arial,sans-serif;font-size:11px;font-weight:700}
+			#map .model-davi .state:hover .shape,#map .model-davi .state.is-active .shape{fill:#22c55e !important}
+			#map .model-davi .state:hover .label_icon_state,#map .model-davi .state.is-active .label_icon_state{fill:#fff}
+			.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px;margin-top:8px}
+			.rma-map-brazil-grid button{border:1px solid #86efac;border-radius:8px;background:#fff;color:#14532d;font-size:12px;font-weight:700;height:34px}
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
 				<div class="rma-map-intro">
@@ -11243,18 +11256,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				<div class="rma-map-feedback" aria-live="polite"></div>
 				<div class="rma-map-brazil" aria-label="Mapa do Brasil">
 					<h4><?php echo esc_html__('Mapa do Brasil (selecione um estado)', 'exertio_theme'); ?></h4>
-					<div class="rma-map-brazil-visual" aria-hidden="true">
-						<svg id="rma-brazil-map" viewBox="0 0 460 465" role="presentation" focusable="false">
-							<defs>
-								<linearGradient id="rmaMapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-									<stop offset="0%" stop-color="#86efac"/>
-									<stop offset="55%" stop-color="#4ade80"/>
-									<stop offset="100%" stop-color="#16a34a"/>
-								</linearGradient>
-							</defs>
-							<path d="m 85.96,177.23 c 1.2,-0.96 2.1,-2.72 3.35,-3.17 3.3,-0.06 7.75,1.47 11.38,0.36 3.7,-1.13 8.53,-5.42 9.42,-6.82 4.38,-6.98 5.02,-8.65 9.23,-10.85 2.4,-1.25 4.63,-1.09 8.1,-0.8 2.67,0.22 3.89,4.02 5.84,5.56 1.59,1.26 3.45,2.25 5.4,2.81 8.22,2.37 17.12,2.07 25.58,2.1 5.1,-0.01 13.74,-0.32 15.28,-1.31 1.6,-1.34 3.56,-16.8 3.74,-18.05 -0.48,-0.97 -2.53,-4.04 -3.3,-6.86 -0.7,-2.58 2.24,-8.32 3.57,-10.88 1.29,-2.49 4.3,-8.71 6.95,-13.12 1.62,-3.54 4.84,-9.53 7.39,-15.2 2.68,-5.99 5.46,-9.23 3.99,-13.45 -1.07,-3.08 -4.1,-3.91 -8.2,-5.03 -3.77,-1.03 -8.38,-1.05 -11.64,-3.45 -3.26,-2.39 -5.24,-5.65 -7.11,-9.89 -1.46,-3.33 -2.77,-7.9 -2.88,-9.68 -2.56,-0.3 -5.85,-1.43 -8.69,0.01 -3.88,2 -1.08,7.28 -5.92,10.13 -4.75,2.79 -6.74,-1.21 -9.87,-0.19 -3.12,1.02 -3.49,5.76 -7.82,6.01 -3.86,0.22 -6.34,-2.51 -8.06,-4.99 -5.45,-7.83 -1.11,-18.97 -5.45,-27.46 -1.17,-2.3 -2.93,-5.4 -5.47,-5.94 -1.58,-0.34 -1.56,0.39 -3.79,1.36 l -4.03,1.76 c -6.5,2.8 -11.2,5.8 -14.5,8.9 -3.5,3.7 -4.11,3.96 -4.11,2.11 0,-0.7 -0.34,-1.49 -0.77,-1.76 l -0.77,-0.52 -3.34,1.23 -3.34,1.23 -3.34,-2.55 -3.34,-2.55 -1.54,0 -1.54,0 -0.51,-3.61 -0.51,-3.61 -1.54,-1.94 -1.54,-1.94 -2.57,2.55 -2.57,2.55 -1.11,-0.97 -1.62,1.23 -7.97,0 0,1.67 c 0,0.97 -0.25,2.29 -0.51,3.08 l -0.51,1.41 3.34,0 c 3.43,-0.28 5.76,1.08 5.4,4.49 -0.44,3.81 -2.55,2.83 -4.8,1.67 -1.77,0.7 -3.54,1.41 -5.31,2.11 l 0,3.61 0,3.61 3,2.99 c 2.1,2.1 1.9,2.6 1.7,4.2 1.79,10.63 -1.24,30.64 -6.43,39.96 -2.93,-0.11 -5.09,-0.97 -8.06,-1.85 -3.32,3.82 -8.66,2.23 -12.14,3.53 -1.75,0.7 -4.49,3.43 -4.49,3.43 -3.6,1.45 -5.18,-1.38 -6.91,0.13 -2.41,2.1 -1.48,6.4 -1.48,9.48 0.15,3.08 -1.02,4.69 -2.4,7.23 0.59,5.53 -3.83,6.47 -5.28,11.76 5.64,4.33 10.41,4.97 16.66,5.99 18.08,2.93 25.07,6.33 35.49,10.5 8.68,3.47 21.76,9.54 25.58,11.51 1.92,-0.85 3.28,-2.05 4.79,-3.26 z"/>
-						</svg>
-					</div>
+					<?php get_template_part('template-parts/dashboard/rma-brazil-map'); ?>
 					<div class="rma-map-brazil-grid">
 						<?php foreach ($states as $uf) : ?>
 							<button type="button" data-uf="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></button>
@@ -11586,6 +11588,21 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				const cityInput = filtersForm.querySelector('input[name="city"]');
 				const stateFilter = filtersForm.querySelector('select[name="state"]');
 				const adimplenciaFilter = filtersForm.querySelector('select[name="adimplencia"]');
+
+				const mapSvg = root.querySelector('#map');
+				if (mapSvg) {
+					mapSvg.addEventListener('click', (ev) => {
+						const stateLink = ev.target.closest('.state[data-state]');
+						if (!stateLink || !stateFilter) return;
+						ev.preventDefault();
+						const uf = String(stateLink.dataset.state || '').toLowerCase();
+						if (!/^[a-z]{2}$/.test(uf)) return;
+						stateFilter.value = uf;
+						mapSvg.querySelectorAll('.state').forEach((node) => node.classList.remove('is-active'));
+						stateLink.classList.add('is-active');
+						feedback.textContent = '<?php echo esc_js(__('Estado selecionado no mapa. Clique em Aplicar para buscar.', 'exertio_theme')); ?>';
+					});
+				}
 
 				if (brazilMapGrid) {
 					brazilMapGrid.addEventListener('click', (ev) => {
