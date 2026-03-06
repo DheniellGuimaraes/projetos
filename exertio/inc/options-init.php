@@ -10996,7 +10996,7 @@ if (!function_exists('rma_map_autogeocode_entity')) {
 			return;
 		}
 		$url = add_query_arg(array(
-			'q' => rawurlencode($address),
+			'q' => $address,
 			'format' => 'json',
 			'limit' => 1,
 		), 'https://nominatim.openstreetmap.org/search');
