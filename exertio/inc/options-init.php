@@ -11089,6 +11089,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		if (empty($iframe_url) && isset($GLOBALS['exertio_theme_options']['rma_map_iframe_url'])) {
 			$iframe_url = $GLOBALS['exertio_theme_options']['rma_map_iframe_url'];
 		}
+		if (is_string($iframe_url)) {
+			$iframe_url = trim($iframe_url);
+			if (stripos($iframe_url, '<iframe') !== false && preg_match('/src=["\']([^"\']+)["\']/i', $iframe_url, $matches)) {
+				$iframe_url = isset($matches[1]) ? trim((string) $matches[1]) : '';
+			}
+			if (strpos($iframe_url, '//') === 0) {
+				$iframe_url = 'https:' . $iframe_url;
+			}
+		}
 		$iframe_url = is_string($iframe_url) ? trim($iframe_url) : '';
 		$iframe_url = !empty($iframe_url) ? esc_url_raw($iframe_url) : '';
 		$iframe_valid = !empty($iframe_url) && wp_http_validate_url($iframe_url) && in_array(strtolower((string) wp_parse_url($iframe_url, PHP_URL_SCHEME)), array('http', 'https'), true);

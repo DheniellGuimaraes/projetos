@@ -357,6 +357,27 @@ $alt_id ='';
 			}
 			if($key == 'RmaMapDirectory' && $val != "")
 			{
+				$extract_map_url_from_raw = static function ($raw_value) {
+					if (!is_string($raw_value)) {
+						return '';
+					}
+
+					$raw_value = trim($raw_value);
+					if ($raw_value === '') {
+						return '';
+					}
+
+					if (stripos($raw_value, '<iframe') !== false && preg_match('/src=["\']([^"\']+)["\']/i', $raw_value, $matches)) {
+						$raw_value = isset($matches[1]) ? trim((string) $matches[1]) : '';
+					}
+
+					if (strpos($raw_value, '//') === 0) {
+						$raw_value = 'https:' . $raw_value;
+					}
+
+					return $raw_value;
+				};
+
 				$map_url = '';
 				$map_menu_target = 'new_tab';
 				$map_directory_mode = 'iframe';
@@ -380,7 +401,8 @@ $alt_id ='';
 					$map_directory_page_url = $exertio_theme_options['rma_map_directory_page_url'];
 				}
 
-				$normalize_map_menu_url = static function ($raw_url) {
+				$normalize_map_menu_url = static function ($raw_url) use ($extract_map_url_from_raw) {
+					$raw_url = $extract_map_url_from_raw($raw_url);
 					$raw_url = is_string($raw_url) ? trim($raw_url) : '';
 					if ($raw_url === '') {
 						return '';
