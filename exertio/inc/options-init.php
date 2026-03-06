@@ -11937,14 +11937,13 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 					const knownUf = new Set(['ac','al','ap','am','ba','ce','df','es','go','ma','mt','ms','mg','pa','pb','pr','pe','pi','rj','rn','rs','ro','rr','sc','sp','se','to']);
 					const statePinCoordinates = {
-						AC:{x:200,y:450}, AL:{x:860,y:520}, AP:{x:780,y:230}, AM:{x:420,y:350}, BA:{x:820,y:520},
-						CE:{x:900,y:420}, DF:{x:700,y:560}, ES:{x:850,y:650}, GO:{x:650,y:550}, MA:{x:850,y:380},
-						MT:{x:550,y:500}, MS:{x:600,y:650}, MG:{x:780,y:620}, PA:{x:720,y:340}, PB:{x:940,y:460},
-						PR:{x:740,y:720}, PE:{x:910,y:470}, PI:{x:830,y:440}, RJ:{x:870,y:660}, RN:{x:960,y:430},
-						RS:{x:700,y:820}, RO:{x:350,y:520}, RR:{x:520,y:200}, SC:{x:760,y:770}, SP:{x:800,y:680},
-						SE:{x:880,y:520}, TO:{x:720,y:450}
+						AC:{px:0.20,py:0.45}, AL:{px:0.86,py:0.52}, AP:{px:0.78,py:0.23}, AM:{px:0.42,py:0.35}, BA:{px:0.82,py:0.52},
+						CE:{px:0.90,py:0.42}, DF:{px:0.70,py:0.56}, ES:{px:0.85,py:0.65}, GO:{px:0.65,py:0.55}, MA:{px:0.85,py:0.38},
+						MT:{px:0.55,py:0.50}, MS:{px:0.60,py:0.65}, MG:{px:0.57,py:0.63}, PA:{px:0.72,py:0.34}, PB:{px:0.94,py:0.46},
+						PR:{px:0.58,py:0.77}, PE:{px:0.91,py:0.47}, PI:{px:0.83,py:0.44}, RJ:{px:0.66,py:0.67}, RN:{px:0.96,py:0.43},
+						RS:{px:0.58,py:0.88}, RO:{px:0.35,py:0.52}, RR:{px:0.52,py:0.20}, SC:{px:0.76,py:0.77}, SP:{px:0.60,py:0.70},
+						SE:{px:0.88,py:0.52}, TO:{px:0.72,py:0.45}
 					};
-					const stateCoordinatesBase = { width: 1000, height: 1000 };
 					let mapDimensions = { minX: 0, minY: 0, width: 460, height: 465 };
 
 					function detectMapDimensions(){
@@ -12043,11 +12042,12 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					rmaMapLog('entity UF', normalizedState);
 					if (!point) return null;
 					rmaMapLog('base coords', normalizedState, point);
-					const scaleX = mapDimensions.width / stateCoordinatesBase.width;
-					const scaleY = mapDimensions.height / stateCoordinatesBase.height;
-					const x = mapDimensions.minX + (Number(point.x) * scaleX);
-					const y = mapDimensions.minY + (Number(point.y) * scaleY);
-					rmaMapLog('scaled coords', normalizedState, { x, y, scaleX, scaleY });
+					const px = Number(point.px);
+					const py = Number(point.py);
+					if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
+					const x = mapDimensions.minX + (mapDimensions.width * px);
+					const y = mapDimensions.minY + (mapDimensions.height * py);
+					rmaMapLog('scaled coords', normalizedState, { x, y, px, py });
 					if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 					if (x < mapDimensions.minX || x > (mapDimensions.minX + mapDimensions.width) || y < mapDimensions.minY || y > (mapDimensions.minY + mapDimensions.height)) {
 						return null;
