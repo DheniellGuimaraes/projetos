@@ -50,12 +50,22 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 		if (stripos($svg_markup, 'id="map"') === false) {
 			$svg_markup = preg_replace('/<svg\b/i', '<svg id="map"', $svg_markup, 1);
 		}
-		if (stripos($svg_markup, 'class="rma-brazil-svg"') === false) {
-			$svg_markup = preg_replace('/<svg\b([^>]*)class="([^"]*)"/i', '<svg$1class="$2 rma-brazil-svg"', $svg_markup, 1, $class_replaced);
-			if (empty($class_replaced)) {
-				$svg_markup = preg_replace('/<svg\b/i', '<svg class="rma-brazil-svg"', $svg_markup, 1);
+		$svg_markup = preg_replace_callback('/<svg\b([^>]*)>/i', function ($matches) {
+			$attrs = (string) $matches[1];
+			if (preg_match('/\bclass="([^"]*)"/i', $attrs, $class_match)) {
+				$classes = preg_split('/\s+/', trim((string) $class_match[1]));
+				$classes = is_array($classes) ? array_filter($classes) : array();
+				if (!in_array('rma-brazil-svg', $classes, true)) {
+					$classes[] = 'rma-brazil-svg';
+				}
+				if (!in_array('brazil-svg', $classes, true)) {
+					$classes[] = 'brazil-svg';
+				}
+				$attrs = preg_replace('/\bclass="[^"]*"/i', 'class="' . implode(' ', $classes) . '"', $attrs, 1);
+				return '<svg' . $attrs . '>';
 			}
-		}
+			return '<svg' . $attrs . ' class="rma-brazil-svg brazil-svg">';
+		}, $svg_markup, 1);
 
 		$tag_pattern = '/<(path|g|a)\b([^>]*)\bid="([^"]*)"([^>]*)>(.*?)<\/\1>/is';
 		$svg_markup = preg_replace_callback(
@@ -95,11 +105,10 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 			continue;
 		}
 
-		if (stripos($svg_markup, 'id="rma-map-pins"') === false) {
-			$svg_markup = preg_replace('/<\/svg>\s*$/i', '<g id="rma-map-pins"></g></svg>', $svg_markup, 1, $pins_inserted);
-			if (empty($pins_inserted)) {
-				$svg_markup .= '<g id="rma-map-pins"></g>';
-			}
+		$svg_markup = preg_replace('/<g\b[^>]*id="rma-map-pins"[^>]*>.*?<\/g>/is', '', $svg_markup);
+		$svg_markup = preg_replace('/<\/svg>\s*$/i', '<g id="rma-map-pins"></g></svg>', $svg_markup, 1, $pins_inserted);
+		if (empty($pins_inserted)) {
+			$svg_markup .= '<g id="rma-map-pins"></g>';
 		}
 	} else {
 		$svg_markup = '';
@@ -110,7 +119,7 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 	<?php if ($svg_markup !== '') : ?>
 		<?php echo $svg_markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	<?php else : ?>
-		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="460" height="465" style="display:inline;" class="rma-brazil-svg">
+		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="460" height="465" style="display:inline;" class="rma-brazil-svg brazil-svg">
 			<g class="model-davi">
 				<desc>Brasil</desc>
 				<?php foreach ($state_points as $uf => $point) : ?>
