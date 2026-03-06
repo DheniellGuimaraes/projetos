@@ -10800,6 +10800,40 @@ if (!function_exists('change_defaults')) {
 	}
 }
 
+
+if (!function_exists('rma_map_allowed_states')) {
+	function rma_map_allowed_states()
+	{
+		return array('ac', 'al', 'ap', 'am', 'ba', 'ce', 'df', 'es', 'go', 'ma', 'mt', 'ms', 'mg', 'pa', 'pb', 'pr', 'pe', 'pi', 'rj', 'rn', 'rs', 'ro', 'rr', 'sc', 'sp', 'se', 'to');
+	}
+}
+
+if (!function_exists('rma_map_normalize_request_params')) {
+	function rma_map_normalize_request_params($request_params = array())
+	{
+		$state = isset($request_params['state']) ? strtolower(sanitize_text_field($request_params['state'])) : '';
+		$city = isset($request_params['city']) ? sanitize_text_field($request_params['city']) : '';
+		$search = isset($request_params['search']) ? sanitize_text_field($request_params['search']) : '';
+		$adimplencia = isset($request_params['adimplencia']) ? strtolower(sanitize_text_field($request_params['adimplencia'])) : 'adimplente';
+		$page = isset($request_params['page']) ? absint($request_params['page']) : 1;
+		$per_page = isset($request_params['per_page']) ? absint($request_params['per_page']) : 25;
+
+		$state = in_array($state, rma_map_allowed_states(), true) ? $state : '';
+		$adimplencia = in_array($adimplencia, array('adimplente', 'inadimplente', 'all'), true) ? $adimplencia : 'adimplente';
+		$page = max(1, $page);
+		$per_page = max(1, min(100, $per_page));
+
+		return array(
+			'state' => $state,
+			'city' => $city,
+			'search' => $search,
+			'adimplencia' => $adimplencia,
+			'page' => $page,
+			'per_page' => $per_page,
+		);
+	}
+}
+
 if (!function_exists('rma_map_normalize_adimplencia')) {
 	function rma_map_normalize_adimplencia($post_id)
 	{
@@ -10826,14 +10860,13 @@ if (!function_exists('rma_map_normalize_adimplencia')) {
 if (!function_exists('rma_map_fetch_entities')) {
 	function rma_map_fetch_entities($request_params = array())
 	{
-		$state = isset($request_params['state']) ? strtolower(sanitize_text_field($request_params['state'])) : '';
-		$city = isset($request_params['city']) ? sanitize_text_field($request_params['city']) : '';
-		$search = isset($request_params['search']) ? sanitize_text_field($request_params['search']) : '';
-		$adimplencia = isset($request_params['adimplencia']) ? strtolower(sanitize_text_field($request_params['adimplencia'])) : 'adimplente';
-		$page = isset($request_params['page']) ? absint($request_params['page']) : 1;
-		$per_page = isset($request_params['per_page']) ? absint($request_params['per_page']) : 25;
-		$page = max(1, $page);
-		$per_page = max(1, min(100, $per_page));
+		$normalized = rma_map_normalize_request_params($request_params);
+		$state = $normalized['state'];
+		$city = $normalized['city'];
+		$search = $normalized['search'];
+		$adimplencia = $normalized['adimplencia'];
+		$page = $normalized['page'];
+		$per_page = $normalized['per_page'];
 
 		$cache_key = 'rma_map_entities_v' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
@@ -10929,6 +10962,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 					'adimplencia' => $adimplencia,
 				),
 				'states_count' => $states_count,
+				'generated_at' => gmdate('c'),
 			),
 		);
 
@@ -10943,10 +10977,18 @@ if (!function_exists('rma_register_map_entities_rest_route')) {
 		register_rest_route('rma/v1', '/map/entities', array(
 			'methods' => WP_REST_Server::READABLE,
 			'callback' => function ($request) {
-				$params = $request->get_params();
+				$params = rma_map_normalize_request_params($request->get_params());
 				return rest_ensure_response(rma_map_fetch_entities($params));
 			},
 			'permission_callback' => '__return_true',
+			'args' => array(
+				'state' => array('type' => 'string', 'required' => false),
+				'city' => array('type' => 'string', 'required' => false),
+				'search' => array('type' => 'string', 'required' => false),
+				'adimplencia' => array('type' => 'string', 'required' => false),
+				'page' => array('type' => 'integer', 'required' => false),
+				'per_page' => array('type' => 'integer', 'required' => false),
+			),
 		));
 	}
 	add_action('rest_api_init', 'rma_register_map_entities_rest_route');
@@ -10976,7 +11018,7 @@ if (!function_exists('rma_map_entities_template_redirect')) {
 			return;
 		}
 
-		$response = rma_map_fetch_entities($_GET);
+		$response = rma_map_fetch_entities(rma_map_normalize_request_params($_GET));
 		wp_send_json($response);
 	}
 	add_action('template_redirect', 'rma_map_entities_template_redirect');
