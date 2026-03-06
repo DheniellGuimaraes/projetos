@@ -417,7 +417,8 @@ $alt_id ='';
 				$map_directory_page_url = $normalize_map_menu_url($map_directory_page_url);
 				$map_directory_page_is_valid = !empty($map_directory_page_url);
 				$dashboard_permalink = get_the_permalink();
-				$map_dashboard_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'rma-map-directory', $dashboard_permalink) : '';
+				$dashboard_base_href = !empty($dashboard_permalink) ? remove_query_arg(array('ext'), $dashboard_permalink) : '';
+				$map_dashboard_href = !empty($dashboard_base_href) ? add_query_arg('ext', 'rma-map-directory', $dashboard_base_href) : '';
 				$fallback_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'edit-profile', $dashboard_permalink) : home_url('/');
 
 				$menu_href = !empty($map_dashboard_href) ? $map_dashboard_href : $fallback_href;
