@@ -11160,7 +11160,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$per_page = $normalized['per_page'];
 		$normalized_city_filter = rma_map_normalize_search_text($city);
 		$requires_search = (trim($search) === '');
-		$cache_key = 'rma_map_entities_v9_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cache_key = 'rma_map_entities_v10_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
 			return $cached_response;
@@ -11221,10 +11221,15 @@ if (!function_exists('rma_map_fetch_entities')) {
 					continue;
 				}
 				$state_code = strtoupper($entity_state);
+				$name = get_the_title($entity_id);
+				if ($name === '') {
+					$name = (string) rma_map_meta_value($entity_id, array('nome_fantasia', 'razao_social'));
+				}
+
 				if ($entity_adimplencia === 'adimplente') {
 					$map_markers[] = array(
 						'id' => (int) $entity_id,
-						'name' => get_the_title($entity_id),
+						'name' => $name,
 						'city' => $entity_city,
 						'state' => $state_code,
 						'latitude' => $lat,
@@ -11243,11 +11248,6 @@ if (!function_exists('rma_map_fetch_entities')) {
 					$complemento = (string) rma_map_meta_value($entity_id, array('complemento'));
 					$address_parts = array_filter(array($address, $numero, $bairro, $complemento));
 					$address = !empty($address_parts) ? implode(', ', $address_parts) : $address;
-				}
-
-				$name = get_the_title($entity_id);
-				if ($name === '') {
-					$name = (string) rma_map_meta_value($entity_id, array('nome_fantasia', 'razao_social'));
 				}
 				$nome_fantasia = (string) rma_map_meta_value($entity_id, array('nome_fantasia'));
 				$razao_social = (string) rma_map_meta_value($entity_id, array('razao_social'));
