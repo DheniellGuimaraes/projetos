@@ -11032,8 +11032,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$adimplencia = $normalized['adimplencia'];
 		$page = $normalized['page'];
 		$per_page = $normalized['per_page'];
-		$requires_search = ($search === '');
-		$cache_key = 'rma_map_entities_v4_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cache_key = 'rma_map_entities_v5_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
 			return $cached_response;
@@ -11144,13 +11143,8 @@ if (!function_exists('rma_map_fetch_entities')) {
 		ksort($states_count);
 
 		$total = count($entities);
-		if ($requires_search) {
-			$page = 1;
-			$paged_items = array();
-		} else {
-			$offset = ($page - 1) * $per_page;
-			$paged_items = array_slice($entities, $offset, $per_page);
-		}
+		$offset = ($page - 1) * $per_page;
+		$paged_items = array_slice($entities, $offset, $per_page);
 
 		$response = array(
 			'success' => true,
@@ -11160,7 +11154,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 					'page' => $page,
 					'per_page' => $per_page,
 					'total' => $total,
-					'total_pages' => $requires_search ? 0 : (int) ceil($total / $per_page),
+					'total_pages' => (int) ceil($total / $per_page),
 				),
 				'filters' => array(
 					'state' => $state,
@@ -11170,7 +11164,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 				),
 				'states_count' => $states_count,
 				'status_count' => $status_count,
-				'requires_search' => $requires_search,
+				'requires_search' => false,
 				'generated_at' => gmdate('c'),
 			),
 		);
@@ -11294,11 +11288,11 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			'city' => isset($_GET['city']) ? wp_unslash($_GET['city']) : '',
 			'adimplencia' => isset($_GET['adimplencia']) ? wp_unslash($_GET['adimplencia']) : 'all',
 		));
-		$has_initial_search = trim((string) $initial_params['search']) !== '';
 		$initial_data = rma_map_fetch_entities($initial_params);
 		$initial_items = isset($initial_data['data']['items']) && is_array($initial_data['data']['items']) ? $initial_data['data']['items'] : array();
 		$initial_pagination = isset($initial_data['data']['pagination']) && is_array($initial_data['data']['pagination']) ? $initial_data['data']['pagination'] : array();
 		$initial_status_count = isset($initial_data['data']['status_count']) && is_array($initial_data['data']['status_count']) ? $initial_data['data']['status_count'] : array();
+		$initial_states_count = isset($initial_data['data']['states_count']) && is_array($initial_data['data']['states_count']) ? $initial_data['data']['states_count'] : array();
 		$initial_total = isset($initial_pagination['total']) ? absint($initial_pagination['total']) : 0;
 		$initial_adimplente = isset($initial_status_count['adimplente']) ? absint($initial_status_count['adimplente']) : 0;
 		$initial_inadimplente = isset($initial_status_count['inadimplente']) ? absint($initial_status_count['inadimplente']) : 0;
@@ -11384,9 +11378,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				</div>
 				<div class="rma-map-states"></div>
 				<div class="rma-map-results">
-					<?php if (!$has_initial_search) : ?>
-						<p class="rma-map-empty"><?php echo esc_html__('Digite um termo de busca e clique em Aplicar para exibir as entidades.', 'exertio_theme'); ?></p>
-					<?php elseif (!empty($initial_items)) : ?>
+					<?php if (!empty($initial_items)) : ?>
 						<?php foreach ($initial_items as $initial_item) : ?>
 							<?php $initial_city_state = trim(((string) ($initial_item['city'] ?? '')) . ((string) ($initial_item['state'] ?? '') !== '' ? '/' . (string) ($initial_item['state'] ?? '') : ''), '/'); ?>
 							<article class="rma-item">
@@ -11546,11 +11538,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					return safeSearch;
 				}
 
-				function renderItems(items, hasSearch){
-					if(!hasSearch){
-						results.innerHTML = '<p class="rma-map-empty"><?php echo esc_js(__('Digite um termo de busca e clique em Aplicar para exibir as entidades.', 'exertio_theme')); ?></p>';
-						return;
-					}
+				function renderItems(items){
 					if(!items.length){
 						results.innerHTML = '<p class="rma-map-empty"><?php echo esc_js(__('Nenhuma entidade encontrada para a busca informada.', 'exertio_theme')); ?></p>';
 						return;
@@ -11584,7 +11572,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const params = new URLSearchParams();
 					params.set('page', String(safePage));
 					params.set('per_page', String(perPage));
-					const searchTerm = getNormalizedSearchTerm();
+					getNormalizedSearchTerm();
 					for (const [k,v] of fd.entries()) {
 						const normalizedValue = String(v || '').trim();
 						if (!normalizedValue) continue;
@@ -11604,14 +11592,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const safeText = normalizeFilterText(normalizedValue, textLimit);
 						if (!safeText) continue;
 						params.set(k, safeText);
-					}
-					if (!searchTerm) {
-						feedback.textContent = '<?php echo esc_js(__('Digite uma busca para listar entidades.', 'exertio_theme')); ?>';
-						renderStates({}, '');
-						renderItems([], false);
-						renderPagination(null);
-						setBusy(false);
-						return;
 					}
 					const paramsString = params.toString();
 					if (window.history && window.history.replaceState) {
@@ -11650,7 +11630,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						feedback.textContent = '';
 						renderSummary(data.data.pagination || null, data.data.status_count || null);
 						renderStates(data.data.states_count || {}, data.data.filters ? data.data.filters.state : '');
-						renderItems(data.data.items || [], true);
+						renderItems(data.data.items || []);
 						renderPagination(data.data.pagination || null);
 						currentPage = safePage;
 					} catch (e) {
@@ -11661,7 +11641,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						feedback.textContent = '<?php echo esc_js(__('Falha ao carregar entidades do mapa.', 'exertio_theme')); ?>';
 						renderSummary(null, null);
 						statesBox.innerHTML = '';
-						renderItems([], !!getNormalizedSearchTerm());
+						renderItems([]);
 						pagination.innerHTML = '';
 					} finally {
 						if(requestId === activeRequestId) {
@@ -11830,15 +11810,10 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 				renderMapPins(initialMapMarkers);
 				syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
-
-				if (getNormalizedSearchTerm()) {
-					load(currentPage);
-				} else {
-					feedback.textContent = '<?php echo esc_js(__('Digite uma busca e clique em Aplicar para iniciar.', 'exertio_theme')); ?>';
-					renderItems([], false);
-					renderPagination(null);
-					renderStates({}, '');
-				}
+				renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
+				renderStates(<?php echo wp_json_encode($initial_states_count); ?>, (stateFilter && stateFilter.value) ? stateFilter.value : '');
+				renderPagination(<?php echo wp_json_encode($initial_pagination); ?>);
+				feedback.textContent = '';
 			})();
 			</script>
 		<?php
