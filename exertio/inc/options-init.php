@@ -11485,3 +11485,59 @@ if (!function_exists('rma_map_directory_shortcode')) {
 	}
 	add_shortcode('rma_map_directory', 'rma_map_directory_shortcode');
 }
+
+if (!function_exists('rma_map_dashboard_ext_targeted_content')) {
+	function rma_map_dashboard_ext_targeted_content()
+	{
+		if (!is_user_logged_in()) {
+			return;
+		}
+
+		$ext = isset($_GET['ext']) ? sanitize_key(wp_unslash($_GET['ext'])) : '';
+		if ($ext !== 'rma-map-directory') {
+			return;
+		}
+
+		$dashboard_page_id = 0;
+		if (function_exists('fl_framework_get_options')) {
+			$dashboard_page_id = absint(fl_framework_get_options('user_dashboard_page'));
+		}
+		if (empty($dashboard_page_id) && isset($GLOBALS['exertio_theme_options']['user_dashboard_page'])) {
+			$dashboard_page_id = absint($GLOBALS['exertio_theme_options']['user_dashboard_page']);
+		}
+		if (!empty($dashboard_page_id) && (int) get_queried_object_id() !== $dashboard_page_id) {
+			return;
+		}
+
+		$template_file = trailingslashit(get_template_directory()) . 'template-parts/dashboard/rma-map-directory.php';
+		if (!file_exists($template_file)) {
+			return;
+		}
+
+		ob_start();
+		include $template_file;
+		$dashboard_content_html = trim((string) ob_get_clean());
+		if ($dashboard_content_html === '') {
+			return;
+		}
+		?>
+		<script>
+		(function(){
+			var inject = function(){
+				var container = document.querySelector('.main-panel .content-wrapper') || document.querySelector('.main-content') || document.querySelector('.dashboard-content-area');
+				if (!container) {
+					return;
+				}
+				container.innerHTML = <?php echo wp_json_encode($dashboard_content_html); ?>;
+			};
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', inject);
+			} else {
+				inject();
+			}
+		})();
+		</script>
+		<?php
+	}
+	add_action('wp_footer', 'rma_map_dashboard_ext_targeted_content', 999);
+}
