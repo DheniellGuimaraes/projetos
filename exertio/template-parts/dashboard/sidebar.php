@@ -444,10 +444,18 @@ $alt_id ='';
 					$menu_href = $map_directory_page_url;
 					$target_attr = '_self';
 					$rel_attr = '';
+				} elseif ($map_is_valid) {
+					$menu_href = $map_url;
+					$target_attr = $open_in_new_tab ? '_blank' : '_self';
+					$rel_attr = $open_in_new_tab ? 'noopener noreferrer' : '';
+				} elseif ($map_directory_page_is_valid) {
+					$menu_href = $map_directory_page_url;
+					$target_attr = '_self';
+					$rel_attr = '';
 				} else {
-					$menu_href = $map_is_valid ? $map_url : $fallback_href;
-					$target_attr = ($map_is_valid && $open_in_new_tab) ? '_blank' : '_self';
-					$rel_attr = ($map_is_valid && $open_in_new_tab) ? 'noopener noreferrer' : '';
+					$menu_href = $fallback_href;
+					$target_attr = '_self';
+					$rel_attr = '';
 				}
 			?>
 				<li class="nav-item <?php if($page_name == 'rma-map-directory') { echo 'active';} ?>">
