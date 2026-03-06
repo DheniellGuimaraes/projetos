@@ -378,24 +378,9 @@ $alt_id ='';
 					return $raw_value;
 				};
 
-				$map_url = '';
-				$map_menu_target = 'new_tab';
-				$map_directory_mode = 'iframe';
 				$map_directory_page_url = '';
 				if (function_exists('fl_framework_get_options')) {
-					$map_url = fl_framework_get_options('rma_map_iframe_url');
-					$map_menu_target = fl_framework_get_options('rma_map_menu_target');
-					$map_directory_mode = fl_framework_get_options('rma_map_directory_mode');
 					$map_directory_page_url = fl_framework_get_options('rma_map_directory_page_url');
-				}
-				if (empty($map_url) && isset($exertio_theme_options['rma_map_iframe_url'])) {
-					$map_url = $exertio_theme_options['rma_map_iframe_url'];
-				}
-				if (empty($map_menu_target) && isset($exertio_theme_options['rma_map_menu_target'])) {
-					$map_menu_target = $exertio_theme_options['rma_map_menu_target'];
-				}
-				if (empty($map_directory_mode) && isset($exertio_theme_options['rma_map_directory_mode'])) {
-					$map_directory_mode = $exertio_theme_options['rma_map_directory_mode'];
 				}
 				if (empty($map_directory_page_url) && isset($exertio_theme_options['rma_map_directory_page_url'])) {
 					$map_directory_page_url = $exertio_theme_options['rma_map_directory_page_url'];
@@ -429,34 +414,14 @@ $alt_id ='';
 					return $normalized_url;
 				};
 
-				$map_url = $normalize_map_menu_url($map_url);
-				$map_is_valid = !empty($map_url);
-
-				$map_directory_mode = in_array($map_directory_mode, array('iframe', 'internal'), true) ? $map_directory_mode : 'iframe';
 				$map_directory_page_url = $normalize_map_menu_url($map_directory_page_url);
 				$map_directory_page_is_valid = !empty($map_directory_page_url);
-
-				$open_in_new_tab = ($map_menu_target === 'new_tab');
 				$dashboard_permalink = get_the_permalink();
 				$fallback_href = !empty($dashboard_permalink) ? add_query_arg('ext', 'edit-profile', $dashboard_permalink) : home_url('/');
 
-				if ($map_directory_mode === 'internal' && $map_directory_page_is_valid) {
-					$menu_href = $map_directory_page_url;
-					$target_attr = '_self';
-					$rel_attr = '';
-				} elseif ($map_is_valid) {
-					$menu_href = $map_url;
-					$target_attr = $open_in_new_tab ? '_blank' : '_self';
-					$rel_attr = $open_in_new_tab ? 'noopener noreferrer' : '';
-				} elseif ($map_directory_page_is_valid) {
-					$menu_href = $map_directory_page_url;
-					$target_attr = '_self';
-					$rel_attr = '';
-				} else {
-					$menu_href = $fallback_href;
-					$target_attr = '_self';
-					$rel_attr = '';
-				}
+				$menu_href = $map_directory_page_is_valid ? $map_directory_page_url : $fallback_href;
+				$target_attr = '_self';
+				$rel_attr = '';
 			?>
 				<li class="nav-item <?php if($page_name == 'rma-map-directory') { echo 'active';} ?>">
 					<a class="nav-link" href="<?php echo esc_url($menu_href); ?>" target="<?php echo esc_attr($target_attr); ?>"<?php echo $rel_attr ? ' rel="' . esc_attr($rel_attr) . '"' : ''; ?>>

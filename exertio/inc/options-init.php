@@ -8921,8 +8921,8 @@ Redux::setSection($opt_name, array(
 		array(
 			'id' => 'rma_map_iframe_url',
 			'type' => 'text',
-			'title' => __('URL do Mapa Público (iframe)', 'exertio_theme'),
-			'subtitle' => __('Informe a URL pública do mapa externo/subdomínio. Se estiver vazia ou inválida, o menu "Mapa de ONGs" abrirá o fallback interno do dashboard.', 'exertio_theme'),
+			'title' => __('URL pública para incorporação externa (iframe)', 'exertio_theme'),
+			'subtitle' => __('Use esta URL apenas para incorporar esta página em outros domínios (ex.: rma.org.br). O conteúdo local desta página continua sendo a lista interna do Mapa de ONGs.', 'exertio_theme'),
 			'validate' => 'url',
 		),
 		array(
@@ -8940,17 +8940,17 @@ Redux::setSection($opt_name, array(
 			'id' => 'rma_map_directory_mode',
 			'type' => 'button_set',
 			'title' => __('Modo de exibição do diretório do mapa', 'exertio_theme'),
-			'subtitle' => __('Escolha entre incorporar o mapa externo (iframe) ou listar entidades pelo endpoint interno.', 'exertio_theme'),
+			'subtitle' => __('Configuração legada. A página [rma_map_directory] sempre exibe conteúdo interno; use a URL pública para iframe apenas em sites externos.', 'exertio_theme'),
 			'options' => array(
 				'iframe' => __('Iframe externo', 'exertio_theme'),
 				'internal' => __('Lista interna (endpoint)', 'exertio_theme'),
 			),
-			'default' => 'iframe',
+			'default' => 'internal',
 		),
 		array(
 			'id' => 'rma_map_iframe_height',
 			'type' => 'text',
-			'title' => __('Altura do iframe do mapa (px)', 'exertio_theme'),
+			'title' => __('Altura sugerida para iframe externo (px)', 'exertio_theme'),
 			'subtitle' => __('Use apenas números. Exemplo: 780.', 'exertio_theme'),
 			'default' => '780',
 			'required' => array(array('rma_map_directory_mode', 'equals', 'iframe')),
@@ -8958,10 +8958,9 @@ Redux::setSection($opt_name, array(
 		array(
 			'id' => 'rma_map_directory_page_url',
 			'type' => 'text',
-			'title' => __('URL da página interna do diretório', 'exertio_theme'),
-			'subtitle' => __('URL da página com shortcode [rma_map_directory] quando o modo for "Lista interna".', 'exertio_theme'),
+			'title' => __('URL da página interna do Mapa de ONGs', 'exertio_theme'),
+			'subtitle' => __('Informe a página que contém o shortcode [rma_map_directory]. Este é o destino do menu Mapa de ONGs no dashboard.', 'exertio_theme'),
 			'validate' => 'url',
-			'required' => array(array('rma_map_directory_mode', 'equals', 'internal')),
 		),
 		array(
 			'id' => 'employer_dashboard_sidebar_sortable',
@@ -11079,35 +11078,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		$per_page = max(1, min(100, absint($atts['per_page'])));
 		$states = array('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO');
 
-		$directory_mode = function_exists('fl_framework_get_options') ? fl_framework_get_options('rma_map_directory_mode') : '';
-		if (empty($directory_mode) && isset($GLOBALS['exertio_theme_options']['rma_map_directory_mode'])) {
-			$directory_mode = $GLOBALS['exertio_theme_options']['rma_map_directory_mode'];
-		}
-		$directory_mode = in_array($directory_mode, array('iframe', 'internal'), true) ? $directory_mode : 'iframe';
 
-		$iframe_url = function_exists('fl_framework_get_options') ? fl_framework_get_options('rma_map_iframe_url') : '';
-		if (empty($iframe_url) && isset($GLOBALS['exertio_theme_options']['rma_map_iframe_url'])) {
-			$iframe_url = $GLOBALS['exertio_theme_options']['rma_map_iframe_url'];
-		}
-		if (is_string($iframe_url)) {
-			$iframe_url = trim($iframe_url);
-			if (stripos($iframe_url, '<iframe') !== false && preg_match('/src=["\']([^"\']+)["\']/i', $iframe_url, $matches)) {
-				$iframe_url = isset($matches[1]) ? trim((string) $matches[1]) : '';
-			}
-			if (strpos($iframe_url, '//') === 0) {
-				$iframe_url = 'https:' . $iframe_url;
-			}
-		}
-		$iframe_url = is_string($iframe_url) ? trim($iframe_url) : '';
-		$iframe_url = !empty($iframe_url) ? esc_url_raw($iframe_url) : '';
-		$iframe_valid = !empty($iframe_url) && wp_http_validate_url($iframe_url) && in_array(strtolower((string) wp_parse_url($iframe_url, PHP_URL_SCHEME)), array('http', 'https'), true);
-
-		$iframe_height = function_exists('fl_framework_get_options') ? fl_framework_get_options('rma_map_iframe_height') : '';
-		if (empty($iframe_height) && isset($GLOBALS['exertio_theme_options']['rma_map_iframe_height'])) {
-			$iframe_height = $GLOBALS['exertio_theme_options']['rma_map_iframe_height'];
-		}
-		$iframe_height = absint($iframe_height);
-		$iframe_height = $iframe_height > 200 ? $iframe_height : 780;
 
 		ob_start();
 		?>
@@ -11123,13 +11094,24 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 			.rma-map-results .rma-item{border:1px solid #efefef;border-radius:6px;padding:12px}
 			.rma-map-pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px}
+			.rma-map-intro{margin-bottom:14px}
+			.rma-map-intro h3{margin:0 0 6px;font-size:22px}
+			.rma-map-intro p{margin:0;color:#5b6470}
+			.rma-map-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0 14px}
+			.rma-map-kpi{border:1px solid #e9edf2;border-radius:8px;padding:10px 12px;background:#fafcff}
+			.rma-map-kpi b{display:block;font-size:20px;line-height:1.2;color:#111827}
+			.rma-map-kpi span{font-size:12px;color:#5b6470}
 		</style>
-		<?php if ($directory_mode === 'iframe' && $iframe_valid) : ?>
-			<div class="rma-map-iframe-wrapper">
-				<iframe src="<?php echo esc_url($iframe_url); ?>" title="<?php echo esc_attr__('Mapa de ONGs', 'exertio_theme'); ?>" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;min-height:<?php echo esc_attr($iframe_height); ?>px;border:0;"></iframe>
-			</div>
-		<?php else : ?>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
+				<div class="rma-map-intro">
+					<h3><?php echo esc_html__('Mapa de ONGs da Rede', 'exertio_theme'); ?></h3>
+					<p><?php echo esc_html__('Consulte organizações por estado, cidade e situação de adimplência. Os resultados abaixo são atualizados em tempo real a partir do diretório interno da plataforma.', 'exertio_theme'); ?></p>
+				</div>
+				<div class="rma-map-kpis" aria-live="polite">
+					<div class="rma-map-kpi"><b data-rma-kpi="total">0</b><span><?php echo esc_html__('ONGs no diretório', 'exertio_theme'); ?></span></div>
+					<div class="rma-map-kpi"><b data-rma-kpi="adimplente">0</b><span><?php echo esc_html__('Adimplentes', 'exertio_theme'); ?></span></div>
+					<div class="rma-map-kpi"><b data-rma-kpi="inadimplente">0</b><span><?php echo esc_html__('Inadimplentes', 'exertio_theme'); ?></span></div>
+				</div>
 				<form class="rma-map-filters" onsubmit="return false;">
 					<input type="search" name="search" placeholder="<?php echo esc_attr__('Buscar ONG', 'exertio_theme'); ?>" />
 					<select name="state">
@@ -11166,6 +11148,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				const statesBox = root.querySelector('.rma-map-states');
 				const results = root.querySelector('.rma-map-results');
 				const pagination = root.querySelector('.rma-map-pagination');
+				const totalKpi = root.querySelector('[data-rma-kpi="total"]');
+				const adimplenteKpi = root.querySelector('[data-rma-kpi="adimplente"]');
+				const inadimplenteKpi = root.querySelector('[data-rma-kpi="inadimplente"]');
 				const filterControls = filtersForm.querySelectorAll('input, select, button');
 				let currentPage = 1;
 				let activeRequestId = 0;
@@ -11227,6 +11212,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						currentPage = Math.min(queryPage, 9999);
 					}
 				})();
+
+				function renderSummary(meta, statusCount){
+					const total = meta && Number.isFinite(Number(meta.total)) ? Math.max(0, parseInt(meta.total, 10)) : 0;
+					const adimplentes = statusCount && Number.isFinite(Number(statusCount.adimplente)) ? Math.max(0, parseInt(statusCount.adimplente, 10)) : 0;
+					const inadimplentes = statusCount && Number.isFinite(Number(statusCount.inadimplente)) ? Math.max(0, parseInt(statusCount.inadimplente, 10)) : 0;
+					if (totalKpi) totalKpi.textContent = String(total);
+					if (adimplenteKpi) adimplenteKpi.textContent = String(adimplentes);
+					if (inadimplenteKpi) inadimplenteKpi.textContent = String(inadimplentes);
+				}
 
 				function renderStates(statesCount, activeState){
 					if(!statesCount || typeof statesCount !== 'object'){
@@ -11362,6 +11356,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if(requestId !== activeRequestId){ return; }
 						if(!data || !data.success){ throw new Error('invalid response'); }
 						feedback.textContent = '';
+						renderSummary(data.data.pagination || null, data.data.status_count || null);
 						renderStates(data.data.states_count || {}, data.data.filters ? data.data.filters.state : '');
 						renderItems(data.data.items || []);
 						renderPagination(data.data.pagination || null);
@@ -11372,6 +11367,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						}
 						if(requestId !== activeRequestId){ return; }
 						feedback.textContent = '<?php echo esc_js(__('Falha ao carregar entidades do mapa.', 'exertio_theme')); ?>';
+						renderSummary(null, null);
 						statesBox.innerHTML = '';
 						results.innerHTML = '';
 						pagination.innerHTML = '';
@@ -11484,7 +11480,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				load(currentPage);
 			})();
 			</script>
-		<?php endif; ?>
 		<?php
 		return ob_get_clean();
 	}
