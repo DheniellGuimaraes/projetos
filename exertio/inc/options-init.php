@@ -11392,18 +11392,18 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-intro h3{margin:0 0 6px;font-size:22px}
 			.rma-map-intro p{margin:0;color:#5b6470}
 			.rma-map-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0 14px}
-			.rma-map-kpi{border:1px solid #e9edf2;border-radius:8px;padding:10px 12px;background:#fafcff}
+			.rma-map-kpi{border:1px solid rgba(255,255,255,.55);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.68);box-shadow:0 10px 24px rgba(2,6,23,.08)}
 			.rma-map-kpi b{display:block;font-size:20px;line-height:1.2;color:#111827}
 			.rma-map-kpi span{font-size:12px;color:#5b6470}
-			.rma-map-directory{border:1px solid #e6ebf1;border-radius:20px;padding:18px;background:#fff;box-shadow:0 20px 40px rgba(15,23,42,.06)}
+			.rma-map-directory{border:1px solid rgba(255,255,255,.58);border-radius:24px;padding:20px;background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.62));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 20px 45px rgba(15,23,42,.10),inset 0 1px 0 rgba(255,255,255,.65)}
 			.rma-map-intro h3{font-size:34px;line-height:1.1;color:#0f172a;font-weight:800}
 			.rma-map-filters input,.rma-map-filters select{border:1px solid #d9e1ea;border-radius:12px;padding:0 12px;background:#fff;color:#0f172a}
 			.rma-map-filters button{border:0;border-radius:12px;background:#111827;color:#fff;font-weight:700}
-			.rma-map-results .rma-item{border:1px solid #e6ebf1;border-radius:16px;padding:14px;box-shadow:0 8px 18px rgba(2,6,23,.05)}
+			.rma-map-results .rma-item{border:1px solid rgba(255,255,255,.5);border-radius:16px;padding:14px;background:rgba(255,255,255,.75);box-shadow:0 10px 24px rgba(2,6,23,.08)}
 			.rma-map-results .rma-item h4{margin:0 0 6px;font-size:16px;font-weight:800;color:#0f172a}
 			.rma-map-results .rma-item a{display:inline-block;margin-top:6px;font-weight:700;color:#2563eb}
 			.rma-map-empty{padding:16px;border:1px dashed #cfd8e3;border-radius:12px;background:#f8fbff;color:#334155;font-weight:600}
-			.rma-map-brazil{margin:6px 0 14px;padding:14px;border:1px solid #e6ebf1;border-radius:14px;background:#f8fafc}
+			.rma-map-brazil{margin:6px 0 14px;padding:16px;border:1px solid rgba(255,255,255,.58);border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,255,255,.58));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
 			.rma-map-brazil h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#0f172a}
 			.box-mapa{position:relative;z-index:1;float:none;padding:20px 0 0 15px;display:block}
 				#map{display:table !important;margin:0 auto;max-width:100%;height:auto}
@@ -11411,23 +11411,23 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				#map .state .shape,#map .state path,#map .state polygon,#map .state circle{cursor:pointer;transition:all .3s ease-in-out}
 				#map .state .label_icon_state{fill:#666;font-family:Arial,sans-serif;font-size:11px;line-height:12px;font-weight:400}
 				#map .state .label_state{display:none;font-family:Arial,sans-serif;font-size:14px;line-height:16px;font-weight:700;fill:#fff}
-				#map .model-davi .state .shape,#map .state path,#map .state polygon,#map path.state,#map polygon.state,#map circle.state,#map ellipse.state{fill:#ddd}
-				#map .model-davi .state .icon_state{fill:#284779}
+				#map .model-davi .state .shape,#map .state path,#map .state polygon,#map path.state,#map polygon.state,#map circle.state,#map ellipse.state{fill:url(#rmaMapGreenGradient)}
+				#map .model-davi .state .icon_state{fill:#0f766e}
 				#map .model-davi .state:hover .shape,
 				#map .model-davi .state.is-active .shape,
 				#map .state:hover path,
 				#map .state.is-active path,
 				#map .state:hover polygon,
-				#map .state.is-active polygon{fill:#039be5 !important}
+					#map .state.is-active polygon{fill:url(#rmaMapGreenGradientActive) !important}
 				#map .state.is-active .shape,
-				#map .state.is-active path,
-				#map .state.is-active polygon{fill:#fd7132 !important}
+					#map .state.is-active path,
+					#map .state.is-active polygon{fill:url(#rmaMapGreenGradientActive) !important;stroke:#14532d !important;stroke-width:1.15}
 				#map .model-davi .state:hover .icon_state,#map .model-davi .state.is-active .icon_state{fill:#039be5}
 				#map .model-davi .state:hover .label_icon_state,#map .model-davi .state.is-active .label_icon_state{fill:#fff}
 				#map .model-davi .state:hover .label_state,#map .model-davi .state.is-active .label_state{display:block;fill:#fff !important}
 				#map #rma-map-pins .rma-map-pin{pointer-events:auto}
 				.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px;margin-top:8px}
-				.rma-map-brazil-grid button{border:1px solid #9ae6b4;border-radius:8px;background:#fff;color:#166534;font-size:12px;font-weight:700;height:34px}
+				.rma-map-brazil-grid button{border:1px solid rgba(52,211,153,.55);border-radius:10px;background:rgba(255,255,255,.82);color:#166534;font-size:12px;font-weight:700;height:34px}
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
 				<div class="rma-map-intro">
@@ -11841,6 +11841,35 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						});
 					}
 
+					function ensureMapGradients(){
+						if (!mapSvg) return;
+						const ns = 'http://www.w3.org/2000/svg';
+						let defs = mapSvg.querySelector('defs');
+						if (!defs) {
+							defs = document.createElementNS(ns, 'defs');
+							mapSvg.insertBefore(defs, mapSvg.firstChild);
+						}
+						if (!mapSvg.querySelector('#rmaMapGreenGradient')) {
+							const grad = document.createElementNS(ns, 'linearGradient');
+							grad.setAttribute('id', 'rmaMapGreenGradient');
+							grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%');
+							grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '100%');
+							const s1 = document.createElementNS(ns, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#dcfce7');
+							const s2 = document.createElementNS(ns, 'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#86efac');
+							grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
+						}
+						if (!mapSvg.querySelector('#rmaMapGreenGradientActive')) {
+							const grad = document.createElementNS(ns, 'linearGradient');
+							grad.setAttribute('id', 'rmaMapGreenGradientActive');
+							grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%');
+							grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '100%');
+							const s1 = document.createElementNS(ns, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#4ade80');
+							const s2 = document.createElementNS(ns, 'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#16a34a');
+							grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
+						}
+					}
+
+					ensureMapGradients();
 					detectMapDimensions();
 					annotateSvgStates();
 
