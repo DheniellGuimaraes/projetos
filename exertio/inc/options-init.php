@@ -10886,30 +10886,13 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$page = $normalized['page'];
 		$per_page = $normalized['per_page'];
 
-		$cache_key = 'rma_map_entities_v3_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cache_key = 'rma_map_entities_v4_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
 		$cached_response = get_transient($cache_key);
 		if ($cached_response !== false) {
 			return $cached_response;
 		}
 
 		$entities = array();
-		$query_defaults = array(
-			'posts_per_page' => -1,
-			'orderby' => 'date',
-			'order' => 'DESC',
-			'fields' => 'ids',
-			'no_found_rows' => true,
-		);
-
-		$employer_query_args = array_merge($query_defaults, array(
-			'post_type' => 'employer',
-			'post_status' => 'publish',
-		));
-		if ($search !== '') {
-			$employer_query_args['s'] = $search;
-		}
-		$employer_query = new WP_Query($employer_query_args);
-
 		global $wpdb;
 		$search_like = '';
 		$search_join = '';
@@ -10932,10 +10915,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 				{$search_where}"
 		);
 
-		$entity_ids = array_values(array_unique(array_merge(
-			is_array($employer_query->posts) ? $employer_query->posts : array(),
-			is_array($rma_entity_ids) ? $rma_entity_ids : array()
-		)));
+		$entity_ids = array_values(array_unique(is_array($rma_entity_ids) ? $rma_entity_ids : array()));
 
 		$states_count = array();
 		$status_count = array('adimplente' => 0, 'inadimplente' => 0);
@@ -10943,15 +10923,13 @@ if (!function_exists('rma_map_fetch_entities')) {
 		if (!empty($entity_ids)) {
 			foreach ($entity_ids as $entity_id) {
 				$post_type = get_post_type($entity_id);
-				if (!in_array($post_type, array('employer', 'rma_entidade'), true)) {
+				if ($post_type !== 'rma_entidade') {
 					continue;
 				}
 
-				if ($post_type === 'rma_entidade') {
-					$governance_status = strtolower(trim((string) get_post_meta($entity_id, 'governance_status', true)));
-					if ($governance_status !== '' && !in_array($governance_status, array('aprovado', 'approved'), true)) {
-						continue;
-					}
+				$governance_status = strtolower(trim((string) get_post_meta($entity_id, 'governance_status', true)));
+				if (!in_array($governance_status, array('aprovado', 'approved', 'aprovada'), true)) {
+					continue;
 				}
 
 				$lat_raw = rma_map_meta_value($entity_id, array('lat', '_employer_latitude', '_latitude'));
@@ -10996,7 +10974,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 				}
 
 				$name = get_the_title($entity_id);
-				if ($post_type === 'rma_entidade' && $name === '') {
+				if ($name === '') {
 					$name = (string) rma_map_meta_value($entity_id, array('nome_fantasia', 'razao_social'));
 				}
 
@@ -11498,6 +11476,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							}
 						}
 					}
+				}
 
 				if (applyButton) {
 					applyButton.addEventListener('click', () => {
