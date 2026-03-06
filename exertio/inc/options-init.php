@@ -10807,6 +10807,61 @@ if (!function_exists('rma_map_allowed_states')) {
 	}
 }
 
+if (!function_exists('rma_map_state_name_to_code')) {
+	function rma_map_state_name_to_code()
+	{
+		return array(
+			'acre' => 'ac',
+			'alagoas' => 'al',
+			'amapa' => 'ap',
+			'amazonas' => 'am',
+			'bahia' => 'ba',
+			'ceara' => 'ce',
+			'distrito federal' => 'df',
+			'espirito santo' => 'es',
+			'goias' => 'go',
+			'maranhao' => 'ma',
+			'mato grosso' => 'mt',
+			'mato grosso do sul' => 'ms',
+			'minas gerais' => 'mg',
+			'para' => 'pa',
+			'paraiba' => 'pb',
+			'parana' => 'pr',
+			'pernambuco' => 'pe',
+			'piaui' => 'pi',
+			'rio de janeiro' => 'rj',
+			'rio grande do norte' => 'rn',
+			'rio grande do sul' => 'rs',
+			'rondonia' => 'ro',
+			'roraima' => 'rr',
+			'santa catarina' => 'sc',
+			'sao paulo' => 'sp',
+			'sergipe' => 'se',
+			'tocantins' => 'to',
+		);
+	}
+}
+
+if (!function_exists('rma_map_normalize_state_code')) {
+	function rma_map_normalize_state_code($raw_state)
+	{
+		$raw_state = is_scalar($raw_state) ? (string) $raw_state : '';
+		$state = strtolower(trim($raw_state));
+		if ($state === '') {
+			return '';
+		}
+
+		if (in_array($state, rma_map_allowed_states(), true)) {
+			return $state;
+		}
+
+		$state_name = rma_map_normalize_search_text($state);
+		$state_name_map = rma_map_state_name_to_code();
+
+		return isset($state_name_map[$state_name]) ? $state_name_map[$state_name] : '';
+	}
+}
+
 if (!function_exists('rma_map_normalize_request_params')) {
 	function rma_map_normalize_request_params($request_params = array())
 	{
@@ -10866,6 +10921,12 @@ if (!function_exists('rma_map_fold_text_ascii')) {
 	function rma_map_fold_text_ascii($text)
 	{
 		$text = is_scalar($text) ? (string) $text : '';
+		$mojibake_map = array(
+			'Ã§' => 'ç', 'Ã£' => 'ã', 'Ã¡' => 'á', 'Ã¢' => 'â', 'Ãª' => 'ê', 'Ã©' => 'é',
+			'Ã­' => 'í', 'Ã³' => 'ó', 'Ã´' => 'ô', 'Ãµ' => 'õ', 'Ãº' => 'ú',
+			'Ã‡' => 'Ç', 'Ãƒ' => 'Ã', 'Ã‰' => 'É', 'Ã“' => 'Ó',
+		);
+		$text = strtr($text, $mojibake_map);
 		$text = wp_strip_all_tags($text);
 		$text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
@@ -10995,10 +11056,10 @@ if (!function_exists('rma_map_get_adimplente_map_markers')) {
 			if ($name === '') {
 				$name = (string) rma_map_meta_value($entity_id, array('nome_fantasia', 'razao_social'));
 			}
-			$state = strtolower(trim((string) rma_map_meta_value($entity_id, array('uf', '_employer_state', '_state'))));
-			if (!in_array($state, rma_map_allowed_states(), true)) {
-				continue;
-			}
+				$state = rma_map_normalize_state_code(rma_map_meta_value($entity_id, array('uf', 'estado', '_employer_state', '_state', '_employer_estado')));
+				if (!in_array($state, rma_map_allowed_states(), true)) {
+					continue;
+				}
 			$lat_raw = rma_map_meta_value($entity_id, array('lat', '_employer_latitude', '_latitude'));
 			$lng_raw = rma_map_meta_value($entity_id, array('lng', '_employer_longitude', '_longitude'));
 			$lat = is_numeric($lat_raw) ? (float) $lat_raw : null;
@@ -11144,7 +11205,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 					$lng = null;
 				}
 
-				$entity_state = strtolower(trim((string) rma_map_meta_value($entity_id, array('uf', '_employer_state', '_state'))));
+				$entity_state = rma_map_normalize_state_code(rma_map_meta_value($entity_id, array('uf', 'estado', '_employer_state', '_state', '_employer_estado')));
 				$entity_city = (string) rma_map_meta_value($entity_id, array('cidade', '_employer_city', '_city'));
 				$entity_adimplencia = rma_map_normalize_adimplencia($entity_id);
 
