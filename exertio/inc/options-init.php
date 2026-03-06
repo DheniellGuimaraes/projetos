@@ -8937,6 +8937,25 @@ Redux::setSection($opt_name, array(
 			'default' => 'new_tab',
 		),
 		array(
+			'id' => 'rma_map_directory_mode',
+			'type' => 'button_set',
+			'title' => __('Modo de exibição do diretório do mapa', 'exertio_theme'),
+			'subtitle' => __('Escolha entre incorporar o mapa externo (iframe) ou listar entidades pelo endpoint interno.', 'exertio_theme'),
+			'options' => array(
+				'iframe' => __('Iframe externo', 'exertio_theme'),
+				'internal' => __('Lista interna (endpoint)', 'exertio_theme'),
+			),
+			'default' => 'iframe',
+		),
+		array(
+			'id' => 'rma_map_iframe_height',
+			'type' => 'text',
+			'title' => __('Altura do iframe do mapa (px)', 'exertio_theme'),
+			'subtitle' => __('Use apenas números. Exemplo: 780.', 'exertio_theme'),
+			'default' => '780',
+			'required' => array(array('rma_map_directory_mode', 'equals', 'iframe')),
+		),
+		array(
 			'id' => 'employer_dashboard_sidebar_sortable',
 			'type' => 'sortable',
 			'title' => __('Employer Dashboard Sidebar Menu', 'exertio_theme'),
@@ -10830,12 +10849,15 @@ if (!function_exists('rma_map_fetch_entities')) {
 
 		$entity_query = new WP_Query($query_args);
 		$entities = array();
+		$states_count = array();
 
 		if (!empty($entity_query->posts)) {
 			foreach ($entity_query->posts as $employer_id) {
 				$lat = get_post_meta($employer_id, '_employer_latitude', true);
 				$lng = get_post_meta($employer_id, '_employer_longitude', true);
-				if ($lat === '' || $lng === '') {
+				$lat = is_numeric($lat) ? (float) $lat : null;
+				$lng = is_numeric($lng) ? (float) $lng : null;
+				if ($lat === null || $lng === null || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
 					continue;
 				}
 
@@ -10853,20 +10875,30 @@ if (!function_exists('rma_map_fetch_entities')) {
 					continue;
 				}
 
+				$state_code = strtoupper($entity_state);
+				if ($state_code !== '') {
+					$states_count[$state_code] = isset($states_count[$state_code]) ? $states_count[$state_code] + 1 : 1;
+				}
+
 				$entities[] = array(
 					'id' => (int) $employer_id,
 					'name' => get_the_title($employer_id),
 					'city' => $entity_city,
-					'state' => strtoupper($entity_state),
+					'state' => $state_code,
 					'address' => (string) get_post_meta($employer_id, '_employer_address', true),
-					'latitude' => (float) $lat,
-					'longitude' => (float) $lng,
+					'latitude' => $lat,
+					'longitude' => $lng,
 					'adimplencia' => $entity_adimplencia,
 					'profile_url' => get_permalink($employer_id),
 				);
 			}
 		}
 		wp_reset_postdata();
+
+		usort($entities, function ($a, $b) {
+			return strcasecmp((string) $a['name'], (string) $b['name']);
+		});
+		ksort($states_count);
 
 		$total = count($entities);
 		$offset = ($page - 1) * $per_page;
@@ -10882,6 +10914,13 @@ if (!function_exists('rma_map_fetch_entities')) {
 					'total' => $total,
 					'total_pages' => (int) ceil($total / $per_page),
 				),
+				'filters' => array(
+					'state' => $state,
+					'city' => $city,
+					'search' => $search,
+					'adimplencia' => $adimplencia,
+				),
+				'states_count' => $states_count,
 			),
 		);
 
@@ -10967,98 +11006,125 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		$per_page = max(1, min(100, absint($atts['per_page'])));
 		$states = array('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO');
 
+		$directory_mode = function_exists('fl_framework_get_options') ? fl_framework_get_options('rma_map_directory_mode') : '';
+		if (empty($directory_mode) && isset($GLOBALS['exertio_theme_options']['rma_map_directory_mode'])) {
+			$directory_mode = $GLOBALS['exertio_theme_options']['rma_map_directory_mode'];
+		}
+		$directory_mode = in_array($directory_mode, array('iframe', 'internal'), true) ? $directory_mode : 'iframe';
+
+		$iframe_url = function_exists('fl_framework_get_options') ? fl_framework_get_options('rma_map_iframe_url') : '';
+		if (empty($iframe_url) && isset($GLOBALS['exertio_theme_options']['rma_map_iframe_url'])) {
+			$iframe_url = $GLOBALS['exertio_theme_options']['rma_map_iframe_url'];
+		}
+		$iframe_url = is_string($iframe_url) ? trim($iframe_url) : '';
+		$iframe_url = !empty($iframe_url) ? esc_url_raw($iframe_url) : '';
+		$iframe_valid = !empty($iframe_url) && wp_http_validate_url($iframe_url) && in_array(strtolower((string) wp_parse_url($iframe_url, PHP_URL_SCHEME)), array('http', 'https'), true);
+
+		$iframe_height = function_exists('fl_framework_get_options') ? fl_framework_get_options('rma_map_iframe_height') : '';
+		if (empty($iframe_height) && isset($GLOBALS['exertio_theme_options']['rma_map_iframe_height'])) {
+			$iframe_height = $GLOBALS['exertio_theme_options']['rma_map_iframe_height'];
+		}
+		$iframe_height = absint($iframe_height);
+		$iframe_height = $iframe_height > 200 ? $iframe_height : 780;
+
 		ob_start();
 		?>
-		<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
-			<form class="rma-map-filters" onsubmit="return false;">
-				<input type="search" name="search" placeholder="<?php echo esc_attr__('Buscar ONG', 'exertio_theme'); ?>" />
-				<select name="state">
-					<option value=""><?php echo esc_html__('Todos os estados', 'exertio_theme'); ?></option>
-					<?php foreach ($states as $uf) : ?>
-						<option value="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<input type="text" name="city" placeholder="<?php echo esc_attr__('Cidade', 'exertio_theme'); ?>" />
-				<select name="adimplencia">
-					<option value="adimplente"><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
-					<option value="inadimplente"><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
-					<option value="all"><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
-				</select>
-				<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
-			</form>
-			<div class="rma-map-feedback" aria-live="polite"></div>
-			<div class="rma-map-results"></div>
-			<div class="rma-map-pagination"></div>
-		</div>
-		<script>
-		(function(){
-			const root = document.currentScript.previousElementSibling;
-			if (!root) return;
-			const endpoint = root.dataset.endpoint;
-			const perPage = parseInt(root.dataset.perPage || '12', 10);
-			const filtersForm = root.querySelector('.rma-map-filters');
-			const feedback = root.querySelector('.rma-map-feedback');
-			const results = root.querySelector('.rma-map-results');
-			const pagination = root.querySelector('.rma-map-pagination');
-			let currentPage = 1;
+		<?php if ($directory_mode === 'iframe' && $iframe_valid) : ?>
+			<div class="rma-map-iframe-wrapper">
+				<iframe src="<?php echo esc_url($iframe_url); ?>" title="<?php echo esc_attr__('Mapa de ONGs', 'exertio_theme'); ?>" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;min-height:<?php echo esc_attr($iframe_height); ?>px;border:0;"></iframe>
+			</div>
+		<?php else : ?>
+			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
+				<form class="rma-map-filters" onsubmit="return false;">
+					<input type="search" name="search" placeholder="<?php echo esc_attr__('Buscar ONG', 'exertio_theme'); ?>" />
+					<select name="state">
+						<option value=""><?php echo esc_html__('Todos os estados', 'exertio_theme'); ?></option>
+						<?php foreach ($states as $uf) : ?>
+							<option value="<?php echo esc_attr(strtolower($uf)); ?>"><?php echo esc_html($uf); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<input type="text" name="city" placeholder="<?php echo esc_attr__('Cidade', 'exertio_theme'); ?>" />
+					<select name="adimplencia">
+						<option value="adimplente"><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
+						<option value="inadimplente"><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
+						<option value="all"><?php echo esc_html__('Todos', 'exertio_theme'); ?></option>
+					</select>
+					<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
+				</form>
+				<div class="rma-map-feedback" aria-live="polite"></div>
+				<div class="rma-map-results"></div>
+				<div class="rma-map-pagination"></div>
+			</div>
+			<script>
+			(function(){
+				const root = document.currentScript.previousElementSibling;
+				if (!root) return;
+				const endpoint = root.dataset.endpoint;
+				const perPage = parseInt(root.dataset.perPage || '12', 10);
+				const filtersForm = root.querySelector('.rma-map-filters');
+				const feedback = root.querySelector('.rma-map-feedback');
+				const results = root.querySelector('.rma-map-results');
+				const pagination = root.querySelector('.rma-map-pagination');
+				let currentPage = 1;
 
-			function renderItems(items){
-				if(!items.length){
-					results.innerHTML = '<p><?php echo esc_js(__('Nenhuma entidade encontrada.', 'exertio_theme')); ?></p>';
-					return;
+				function renderItems(items){
+					if(!items.length){
+						results.innerHTML = '<p><?php echo esc_js(__('Nenhuma entidade encontrada.', 'exertio_theme')); ?></p>';
+						return;
+					}
+					results.innerHTML = items.map(item => {
+						const city = item.city ? item.city + '/' + item.state : item.state;
+						return `<article class="rma-item"><h4>${item.name}</h4><p>${city}</p><p>${item.address || ''}</p><a href="${item.profile_url}" target="_blank" rel="noopener noreferrer"><?php echo esc_js(__('Ver perfil', 'exertio_theme')); ?></a></article>`;
+					}).join('');
 				}
-				results.innerHTML = items.map(item => {
-					const city = item.city ? item.city + '/' + item.state : item.state;
-					return `<article class="rma-item"><h4>${item.name}</h4><p>${city}</p><p>${item.address || ''}</p><a href="${item.profile_url}" target="_blank" rel="noopener noreferrer"><?php echo esc_js(__('Ver perfil', 'exertio_theme')); ?></a></article>`;
-				}).join('');
-			}
 
-			function renderPagination(meta){
-				if(!meta || meta.total_pages <= 1){
-					pagination.innerHTML = '';
-					return;
+				function renderPagination(meta){
+					if(!meta || meta.total_pages <= 1){
+						pagination.innerHTML = '';
+						return;
+					}
+					const prev = meta.page > 1 ? `<button type="button" data-page="${meta.page - 1}"><?php echo esc_js(__('Anterior', 'exertio_theme')); ?></button>` : '';
+					const next = meta.page < meta.total_pages ? `<button type="button" data-page="${meta.page + 1}"><?php echo esc_js(__('Próximo', 'exertio_theme')); ?></button>` : '';
+					pagination.innerHTML = `${prev}<span>${meta.page} / ${meta.total_pages}</span>${next}`;
 				}
-				const prev = meta.page > 1 ? `<button type="button" data-page="${meta.page - 1}"><?php echo esc_js(__('Anterior', 'exertio_theme')); ?></button>` : '';
-				const next = meta.page < meta.total_pages ? `<button type="button" data-page="${meta.page + 1}"><?php echo esc_js(__('Próximo', 'exertio_theme')); ?></button>` : '';
-				pagination.innerHTML = `${prev}<span>${meta.page} / ${meta.total_pages}</span>${next}`;
-			}
 
-			async function load(page = 1){
-				feedback.textContent = '<?php echo esc_js(__('Carregando mapa...', 'exertio_theme')); ?>';
-				const fd = new FormData(filtersForm);
-				const params = new URLSearchParams();
-				params.set('page', String(page));
-				params.set('per_page', String(perPage));
-				for (const [k,v] of fd.entries()) {
-					if (!v) continue;
-					if (k === 'adimplencia' && v === 'all') continue;
-					params.set(k, v);
+				async function load(page = 1){
+					feedback.textContent = '<?php echo esc_js(__('Carregando mapa...', 'exertio_theme')); ?>';
+					const fd = new FormData(filtersForm);
+					const params = new URLSearchParams();
+					params.set('page', String(page));
+					params.set('per_page', String(perPage));
+					for (const [k,v] of fd.entries()) {
+						if (!v) continue;
+						if (k === 'adimplencia' && v === 'all') continue;
+						params.set(k, v);
+					}
+					try {
+						const res = await fetch(endpoint + '?' + params.toString(), { credentials: 'same-origin' });
+						const data = await res.json();
+						if(!data || !data.success){ throw new Error('invalid response'); }
+						feedback.textContent = '';
+						renderItems(data.data.items || []);
+						renderPagination(data.data.pagination || null);
+						currentPage = page;
+					} catch (e) {
+						feedback.textContent = '<?php echo esc_js(__('Falha ao carregar entidades do mapa.', 'exertio_theme')); ?>';
+						results.innerHTML = '';
+						pagination.innerHTML = '';
+					}
 				}
-				try {
-					const res = await fetch(endpoint + '?' + params.toString(), { credentials: 'same-origin' });
-					const data = await res.json();
-					if(!data || !data.success){ throw new Error('invalid response'); }
-					feedback.textContent = '';
-					renderItems(data.data.items || []);
-					renderPagination(data.data.pagination || null);
-					currentPage = page;
-				} catch (e) {
-					feedback.textContent = '<?php echo esc_js(__('Falha ao carregar entidades do mapa.', 'exertio_theme')); ?>';
-					results.innerHTML = '';
-					pagination.innerHTML = '';
-				}
-			}
 
-			root.querySelector('.rma-map-apply').addEventListener('click', () => load(1));
-			pagination.addEventListener('click', (ev) => {
-				const btn = ev.target.closest('button[data-page]');
-				if(!btn) return;
-				load(parseInt(btn.dataset.page, 10));
-			});
+				root.querySelector('.rma-map-apply').addEventListener('click', () => load(1));
+				pagination.addEventListener('click', (ev) => {
+					const btn = ev.target.closest('button[data-page]');
+					if(!btn) return;
+					load(parseInt(btn.dataset.page, 10));
+				});
 
-			load(currentPage);
-		})();
-		</script>
+				load(currentPage);
+			})();
+			</script>
+		<?php endif; ?>
 		<?php
 		return ob_get_clean();
 	}
