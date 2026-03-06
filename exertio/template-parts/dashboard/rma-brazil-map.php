@@ -8,6 +8,38 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
+$state_points = array(
+	'ac' => array(78, 150),
+	'al' => array(395, 231),
+	'ap' => array(295, 72),
+	'am' => array(165, 118),
+	'ba' => array(350, 256),
+	'ce' => array(382, 162),
+	'df' => array(268, 258),
+	'es' => array(351, 304),
+	'go' => array(258, 262),
+	'ma' => array(320, 146),
+	'mt' => array(210, 236),
+	'ms' => array(200, 300),
+	'mg' => array(312, 292),
+	'pa' => array(265, 130),
+	'pb' => array(405, 195),
+	'pr' => array(275, 371),
+	'pe' => array(388, 210),
+	'pi' => array(350, 172),
+	'rj' => array(334, 328),
+	'rn' => array(413, 172),
+	'rs' => array(272, 435),
+	'ro' => array(125, 168),
+	'rr' => array(170, 48),
+	'sc' => array(287, 401),
+	'sp' => array(286, 334),
+	'se' => array(386, 245),
+	'to' => array(260, 184),
+);
+
+$state_codes = array_keys($state_points);
+$state_codes_pattern = implode('|', array_map('preg_quote', $state_codes));
 $svg_file_path = trailingslashit(get_template_directory()) . 'images/brasil.svg';
 $svg_markup = '';
 
@@ -26,29 +58,37 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 			}
 		}
 
+		$tag_pattern = '/<(path|g|a)\b([^>]*)\bid="(' . $state_codes_pattern . ')"([^>]*)>(.*?)<\/\1>/is';
 		$svg_markup = preg_replace_callback(
-			'/<([a-z0-9:_-]+)\b([^>]*)\bid="state_([a-z]{2})"([^>]*)>/i',
+			$tag_pattern,
 			function ($matches) {
-				$tag_name = $matches[1];
-				$attrs = $matches[2] . $matches[4];
-				$uf = strtolower($matches[3]);
-
-				if (!preg_match('/\bclass="([^"]*)"/i', $attrs)) {
-					$attrs .= ' class="state"';
-				} elseif (!preg_match('/\bclass="[^"]*\bstate\b/i', $attrs)) {
-					$attrs = preg_replace('/\bclass="([^"]*)"/i', 'class="$1 state"', $attrs, 1);
-				}
-
-				if (!preg_match('/\bdata-state="[a-z]{2}"/i', $attrs)) {
-					$attrs .= ' data-state="' . $uf . '"';
-				} else {
-					$attrs = preg_replace('/\bdata-state="[^"]*"/i', 'data-state="' . $uf . '"', $attrs, 1);
-				}
-
-				return '<' . $tag_name . $attrs . ' id="state_' . $uf . '">';
+				$tag = strtolower((string) $matches[1]);
+				$attrs = (string) $matches[2] . (string) $matches[4];
+				$uf = strtolower((string) $matches[3]);
+				$content = (string) $matches[5];
+				$open = '<' . $tag . $attrs . ' id="state_shape_' . $uf . '">';
+				$close = '</' . $tag . '>';
+				return '<g id="state_' . $uf . '" class="state" data-state="' . $uf . '">' . $open . $content . $close . '</g>';
 			},
 			$svg_markup
 		);
+
+		foreach ($state_codes as $uf) {
+			if (stripos($svg_markup, 'id="state_' . $uf . '"') !== false) {
+				if (!preg_match('/id="state_' . preg_quote($uf, '/') . '"[^>]*\bclass="[^"]*\bstate\b/i', $svg_markup)) {
+					$svg_markup = preg_replace('/id="state_' . preg_quote($uf, '/') . '"([^>]*)/i', 'id="state_' . $uf . '"$1 class="state" data-state="' . $uf . '"', $svg_markup, 1);
+				}
+				continue;
+			}
+
+			$point = isset($state_points[$uf]) ? $state_points[$uf] : array(0, 0);
+			$svg_markup = preg_replace(
+				'/<\/svg>\s*$/i',
+				'<g id="state_' . $uf . '" class="state" data-state="' . $uf . '"><circle class="shape" cx="' . (float) $point[0] . '" cy="' . (float) $point[1] . '" r="14" fill="transparent" stroke="transparent" /></g></svg>',
+				$svg_markup,
+				1
+			);
+		}
 
 		if (stripos($svg_markup, 'id="rma-map-pins"') === false) {
 			$svg_markup = preg_replace('/<\/svg>\s*$/i', '<g id="rma-map-pins"></g></svg>', $svg_markup, 1, $pins_inserted);
@@ -68,6 +108,11 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="460" height="465" style="display:inline;" class="rma-brazil-svg">
 			<g class="model-davi">
 				<desc>Brasil</desc>
+				<?php foreach ($state_points as $uf => $point) : ?>
+					<g id="state_<?php echo esc_attr($uf); ?>" class="state" data-state="<?php echo esc_attr($uf); ?>">
+						<circle class="shape" cx="<?php echo esc_attr((string) $point[0]); ?>" cy="<?php echo esc_attr((string) $point[1]); ?>" r="11" />
+					</g>
+				<?php endforeach; ?>
 				<g id="rma-map-pins"></g>
 			</g>
 		</svg>
