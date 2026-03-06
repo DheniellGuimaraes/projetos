@@ -11825,11 +11825,12 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if(requestId !== activeRequestId){ return; }
 						if(!data || !data.success){ throw new Error('invalid response'); }
 							feedback.textContent = '';
-							renderSummary(data.data.pagination || null, data.data.status_count || null);
-							renderStates(data.data.states_count || {}, data.data.filters ? data.data.filters.state : '');
-							renderItems(data.data.items || []);
-							renderMapPins(data.data.map_markers || []);
-							renderPagination(data.data.pagination || null);
+							const payload = (data && typeof data === 'object' && data.data && typeof data.data === 'object') ? data.data : data;
+							renderSummary(payload.pagination || null, payload.status_count || null);
+							renderStates(payload.states_count || {}, payload.filters ? payload.filters.state : '');
+							renderItems(payload.items || []);
+							renderMapPins(resolveMapMarkers(data));
+							renderPagination(payload.pagination || null);
 							currentPage = safePage;
 					} catch (e) {
 						if (e && e.name === 'AbortError') {
@@ -12020,6 +12021,34 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					return null;
 				}
 
+
+				function resolveMapMarkers(apiResponse){
+					const payload = (apiResponse && typeof apiResponse === 'object' && apiResponse.data && typeof apiResponse.data === 'object') ? apiResponse.data : apiResponse;
+					const rawMarkers = (apiResponse && apiResponse.entities)
+						|| (apiResponse && apiResponse.items)
+						|| (payload && payload.entities)
+						|| (payload && payload.items)
+						|| (payload && payload.map_markers)
+						|| [];
+
+					if (!Array.isArray(rawMarkers)) return [];
+
+					return rawMarkers.map((entity) => {
+						const uf = String((entity && (entity.uf || entity.state)) || '').trim().toUpperCase();
+						const cidade = String((entity && (entity.cidade || entity.city)) || '').trim();
+						const title = String((entity && (entity.title || entity.name)) || '').trim();
+						return {
+							id: entity && entity.id ? Number(entity.id) : 0,
+							name: title,
+							city: cidade,
+							state: uf,
+							lat: entity && (entity.lat ?? entity.latitude),
+							lng: entity && (entity.lng ?? entity.longitude),
+							adimplencia: String((entity && entity.adimplencia) || 'adimplente').toLowerCase(),
+						};
+					}).filter((entity) => /^[A-Z]{2}$/.test(entity.state));
+				}
+
 				function mapCoordsFromGeoOrState(marker){
 					const state = String((marker && marker.state) || '').toLowerCase();
 					const stateAnchor = getStateAnchorFromSvg(state);
@@ -12164,7 +12193,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					clearTimeout(searchDebounce);
 				});
 
-				renderMapPins(initialMapMarkers);
+				renderMapPins(resolveMapMarkers({ data: { map_markers: initialMapMarkers } }));
 				syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
 				if (searchInput && normalizeFilterText(searchInput.value || '', 120)) {
 					renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
