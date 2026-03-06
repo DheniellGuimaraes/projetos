@@ -11889,13 +11889,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const mapSvg = root.querySelector('.box-mapa svg#map, .box-mapa svg');
 					const mapPanel = root.querySelector('.rma-map-brazil');
 					let pinTooltip = null;
-					const mapDebugEnabled = true;
-
-					function mapDebug(){
-						if (!mapDebugEnabled || !window || !window.console) return;
-						console.log('[RMA MAP]', ...arguments);
-					}
-
 					function ensurePinTooltip(){
 						if (!mapPanel) return null;
 						if (pinTooltip && pinTooltip.isConnected) return pinTooltip;
@@ -11930,6 +11923,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					}
 
 					const knownUf = new Set(['ac','al','ap','am','ba','ce','df','es','go','ma','mt','ms','mg','pa','pb','pr','pe','pi','rj','rn','rs','ro','rr','sc','sp','se','to']);
+					const statePinCoordinates = {
+						AC:{x:200,y:450}, AL:{x:860,y:520}, AP:{x:780,y:230}, AM:{x:420,y:350}, BA:{x:820,y:520},
+						CE:{x:900,y:420}, DF:{x:700,y:560}, ES:{x:850,y:650}, GO:{x:650,y:550}, MA:{x:850,y:380},
+						MT:{x:550,y:500}, MS:{x:600,y:650}, MG:{x:780,y:620}, PA:{x:720,y:340}, PB:{x:940,y:460},
+						PR:{x:740,y:720}, PE:{x:910,y:470}, PI:{x:830,y:440}, RJ:{x:870,y:660}, RN:{x:960,y:430},
+						RS:{x:700,y:820}, RO:{x:350,y:520}, RR:{x:520,y:200}, SC:{x:760,y:770}, SP:{x:800,y:680},
+						SE:{x:880,y:520}, TO:{x:720,y:450}
+					};
+					const stateCoordinatesBase = { width: 1000, height: 900 };
 					let mapDimensions = { minX: 0, minY: 0, width: 460, height: 465 };
 
 					function detectMapDimensions(){
@@ -12007,27 +12009,17 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					ensureMapGradients();
 					detectMapDimensions();
 					annotateSvgStates();
-					const debugStates = mapSvg ? mapSvg.querySelectorAll('.state[id^="state_"]') : [];
-					mapDebug('states found', debugStates.length);
-					mapDebug('has #rma-map-pins', !!(mapSvg && mapSvg.querySelector('#rma-map-pins')));
 
-
-				function getStateAnchorFromSvg(state){
-					if (!mapSvg || !state) return null;
-					const stateNode = mapSvg.querySelector('#state_' + state);
-					if (!stateNode) return null;
-					if (typeof stateNode.getBBox !== 'function') return null;
-					try {
-						const bbox = stateNode.getBBox();
-						const x = Number(bbox.x) + (Number(bbox.width) / 2);
-						const y = Number(bbox.y) + (Number(bbox.height) / 2);
-						if (Number.isFinite(x) && Number.isFinite(y)) {
-							return [x, y];
-						}
-					} catch (e) {
-						return null;
-					}
-					return null;
+				function getFixedStatePinCoords(state){
+					const normalizedState = String(state || '').trim().toUpperCase();
+					const point = statePinCoordinates[normalizedState] || null;
+					if (!point) return null;
+					const scaleX = mapDimensions.width / stateCoordinatesBase.width;
+					const scaleY = mapDimensions.height / stateCoordinatesBase.height;
+					return [
+						mapDimensions.minX + (Number(point.x) * scaleX),
+						mapDimensions.minY + (Number(point.y) * scaleY)
+					];
 				}
 
 
@@ -12040,8 +12032,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						|| (payload && payload.map_markers)
 						|| [];
 
-					if (!Array.isArray(rawMarkers)) { mapDebug('resolveMapMarkers: invalid payload', rawMarkers); return []; }
-					mapDebug('resolveMapMarkers raw', rawMarkers.length, rawMarkers);
+					if (!Array.isArray(rawMarkers)) return [];
 
 					return rawMarkers.map((entity) => {
 						const uf = String((entity && (entity.uf || entity.state)) || '').trim().toUpperCase();
@@ -12060,38 +12051,10 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				}
 
 				function mapCoordsFromGeoOrState(marker){
-					const state = String((marker && marker.state) || '').toLowerCase();
-					const stateAnchor = getStateAnchorFromSvg(state);
-					const lat = Number(marker && (marker.latitude ?? marker.lat));
-					const lng = Number(marker && (marker.longitude ?? marker.lng));
-					if (Number.isFinite(lat) && Number.isFinite(lng)) {
-						const minLng = -74, maxLng = -34, minLat = -34, maxLat = 6;
-						const x = mapDimensions.minX + (((lng - minLng) / (maxLng - minLng)) * mapDimensions.width);
-						const y = mapDimensions.minY + (((maxLat - lat) / (maxLat - minLat)) * mapDimensions.height);
-						if (Number.isFinite(x) && Number.isFinite(y) && x >= (mapDimensions.minX + 5) && x <= (mapDimensions.minX + mapDimensions.width - 5) && y >= (mapDimensions.minY + 5) && y <= (mapDimensions.minY + mapDimensions.height - 5)) {
-							if (stateAnchor) {
-								const distance = Math.hypot(x - stateAnchor[0], y - stateAnchor[1]);
-								const maxDistance = Math.max(mapDimensions.width, mapDimensions.height) * 0.32;
-								if (Number.isFinite(distance) && distance > maxDistance) {
-									return stateAnchor;
-								}
-							}
-							return [x, y];
-						}
-					}
-
-					if (stateAnchor) {
-						return stateAnchor;
-					}
-
-					if (!mapStatePoints[state]) return null;
-					const scaleX = mapDimensions.width / 460;
-					const scaleY = mapDimensions.height / 465;
-					return [
-						mapDimensions.minX + (mapStatePoints[state][0] * scaleX),
-						mapDimensions.minY + (mapStatePoints[state][1] * scaleY)
-					];
+					const state = String((marker && (marker.state || marker.uf)) || '').trim().toUpperCase();
+					return getFixedStatePinCoords(state);
 				}
+
 				function renderMapPins(markers){
 					if (!mapSvg || !Array.isArray(markers)) return;
 					const ns = 'http://www.w3.org/2000/svg';
@@ -12102,16 +12065,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						mapSvg.appendChild(group);
 					}
 					group.innerHTML = '';
-					mapDebug('renderMapPins markers', markers.length);
 					markers.forEach((marker, idx) => {
 						if (!marker || String(marker.adimplencia || 'adimplente') !== 'adimplente') return;
-						const markerStateRaw = String((marker && (marker.state || marker.uf)) || '').trim();
-						const markerState = markerStateRaw.toLowerCase();
-						const debugStateEl = mapSvg ? mapSvg.querySelector('#state_' + markerState) : null;
-						mapDebug('marker uf/state', markerStateRaw, 'state el?', !!debugStateEl);
-						if (debugStateEl && typeof debugStateEl.getBBox === 'function') {
-							try { const b = debugStateEl.getBBox(); mapDebug('state bbox', markerState, b); } catch (err) { mapDebug('state bbox error', markerState, err); }
-						}
 						const coords = mapCoordsFromGeoOrState(marker);
 						if (!coords) return;
 						const jitterX = ((idx % 7) - 3) * 1.8;
@@ -12137,7 +12092,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							pin.addEventListener('mousemove', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
 							pin.addEventListener('mouseleave', hidePinTooltip);
 							group.appendChild(pin);
-							mapDebug('pin appended', markerStateRaw, x, y);
 						});
 				}
 
@@ -12213,23 +12167,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				});
 
 				renderMapPins(resolveMapMarkers({ data: { map_markers: initialMapMarkers } }));
-				if (mapSvg) {
-					let debugPinsGroup = mapSvg.querySelector('#rma-map-pins');
-					if (!debugPinsGroup) {
-						debugPinsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-						debugPinsGroup.setAttribute('id', 'rma-map-pins');
-						mapSvg.appendChild(debugPinsGroup);
-					}
-					const testPin = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-					testPin.setAttribute('cx', String(mapDimensions.minX + 40));
-					testPin.setAttribute('cy', String(mapDimensions.minY + 40));
-					testPin.setAttribute('r', '6');
-					testPin.setAttribute('fill', '#ef4444');
-					testPin.setAttribute('opacity', '0.9');
-					testPin.setAttribute('data-debug-pin', '1');
-					debugPinsGroup.appendChild(testPin);
-					mapDebug('debug test pin appended', mapDimensions.minX + 40, mapDimensions.minY + 40);
-				}
 				syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
 				if (searchInput && normalizeFilterText(searchInput.value || '', 120)) {
 					renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
