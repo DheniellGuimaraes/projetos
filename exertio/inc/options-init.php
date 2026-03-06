@@ -12045,11 +12045,11 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const px = Number(point.px);
 					const py = Number(point.py);
 					if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
-					const x = mapDimensions.minX + (mapDimensions.width * px);
-					const y = mapDimensions.minY + (mapDimensions.height * py);
+					const x = mapDimensions.width * px;
+					const y = mapDimensions.height * py;
 					rmaMapLog('scaled coords', normalizedState, { x, y, px, py });
 					if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-					if (x < mapDimensions.minX || x > (mapDimensions.minX + mapDimensions.width) || y < mapDimensions.minY || y > (mapDimensions.minY + mapDimensions.height)) {
+					if (x < 0 || x > mapDimensions.width || y < 0 || y > mapDimensions.height) {
 						return null;
 					}
 					return [
@@ -12111,8 +12111,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const x = coords[0] + jitterX;
 						const y = coords[1] + jitterY;
 						const pin = document.createElementNS(ns, 'circle');
-						pin.setAttribute('cx', String(x));
-						pin.setAttribute('cy', String(y));
+						pin.setAttribute('transform', `translate(${x}, ${y})`);
+						pin.setAttribute('cx', '0');
+						pin.setAttribute('cy', '0');
 						pin.setAttribute('r', '6');
 						pin.setAttribute('fill', '#ff3b30');
 						pin.setAttribute('class', 'rma-map-pin');
