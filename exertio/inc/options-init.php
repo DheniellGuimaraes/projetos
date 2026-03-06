@@ -10834,6 +10834,24 @@ if (!function_exists('rma_map_normalize_request_params')) {
 	}
 }
 
+
+if (!function_exists('rma_map_meta_value')) {
+	function rma_map_meta_value($post_id, $keys = array(), $default = '')
+	{
+		foreach ($keys as $meta_key) {
+			$value = get_post_meta($post_id, $meta_key, true);
+			if (is_string($value)) {
+				$value = trim($value);
+			}
+			if ($value !== '' && $value !== null) {
+				return $value;
+			}
+		}
+
+		return $default;
+	}
+}
+
 if (!function_exists('rma_map_normalize_adimplencia')) {
 	function rma_map_normalize_adimplencia($post_id)
 	{
@@ -10926,7 +10944,7 @@ if (!function_exists('rma_map_fetch_entities')) {
 					'name' => get_the_title($employer_id),
 					'city' => $entity_city,
 					'state' => $state_code,
-					'address' => (string) get_post_meta($employer_id, '_employer_address', true),
+					'address' => (string) rma_map_meta_value($employer_id, array('_employer_address', '_address')),
 					'latitude' => $lat,
 					'longitude' => $lng,
 					'adimplencia' => $entity_adimplencia,
@@ -11079,6 +11097,14 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 		ob_start();
 		?>
+		<style>
+			.rma-map-directory{display:block;border:1px solid #e6e6e6;border-radius:8px;padding:16px;background:#fff}
+			.rma-map-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+			.rma-map-filters input,.rma-map-filters select,.rma-map-filters button{height:40px}
+			.rma-map-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+			.rma-map-results .rma-item{border:1px solid #efefef;border-radius:6px;padding:12px}
+			.rma-map-pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px}
+		</style>
 		<?php if ($directory_mode === 'iframe' && $iframe_valid) : ?>
 			<div class="rma-map-iframe-wrapper">
 				<iframe src="<?php echo esc_url($iframe_url); ?>" title="<?php echo esc_attr__('Mapa de ONGs', 'exertio_theme'); ?>" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;min-height:<?php echo esc_attr($iframe_height); ?>px;border:0;"></iframe>
