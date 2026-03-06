@@ -10910,23 +10910,31 @@ if (!function_exists('rma_map_fetch_entities')) {
 		}
 		$employer_query = new WP_Query($employer_query_args);
 
-		$rma_query_args = array_merge($query_defaults, array(
-			'post_type' => 'rma_entidade',
-			'post_status' => array('publish', 'draft', 'private', 'pending'),
-			'meta_query' => array(
-				array(
-					'key' => 'governance_status',
-					'value' => 'aprovado',
-				),
-			),
-		));
+		global $wpdb;
+		$search_like = '';
+		$search_join = '';
+		$search_where = '';
 		if ($search !== '') {
-			$rma_query_args['s'] = $search;
+			$search_like = '%' . $wpdb->esc_like($search) . '%';
+			$search_join = " LEFT JOIN {$wpdb->postmeta} pm_nome_fantasia ON (pm_nome_fantasia.post_id = p.ID AND pm_nome_fantasia.meta_key = 'nome_fantasia') LEFT JOIN {$wpdb->postmeta} pm_razao_social ON (pm_razao_social.post_id = p.ID AND pm_razao_social.meta_key = 'razao_social') ";
+			$search_where = $wpdb->prepare(" AND (p.post_title LIKE %s OR pm_nome_fantasia.meta_value LIKE %s OR pm_razao_social.meta_value LIKE %s)", $search_like, $search_like, $search_like);
 		}
-		$rma_query = new WP_Query($rma_query_args);
+
+		$rma_entity_ids = $wpdb->get_col(
+			"SELECT DISTINCT p.ID
+			FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_gov
+				ON (pm_gov.post_id = p.ID AND pm_gov.meta_key = 'governance_status')
+			{$search_join}
+			WHERE p.post_type = 'rma_entidade'
+				AND p.post_status IN ('publish', 'private', 'draft', 'pending')
+				AND LOWER(pm_gov.meta_value) IN ('aprovado', 'approved', 'aprovada')
+				{$search_where}"
+		);
+
 		$entity_ids = array_values(array_unique(array_merge(
 			is_array($employer_query->posts) ? $employer_query->posts : array(),
-			is_array($rma_query->posts) ? $rma_query->posts : array()
+			is_array($rma_entity_ids) ? $rma_entity_ids : array()
 		)));
 
 		$states_count = array();
@@ -11042,6 +11050,26 @@ if (!function_exists('rma_map_fetch_entities')) {
 		set_transient($cache_key, $response, 5 * MINUTE_IN_SECONDS);
 		return $response;
 	}
+}
+
+if (!function_exists('rma_map_bump_cache_on_meta_change')) {
+	function rma_map_bump_cache_on_meta_change($meta_id, $post_id, $meta_key, $meta_value)
+	{
+		$post_id = absint($post_id);
+		if ($post_id <= 0 || get_post_type($post_id) !== 'rma_entidade') {
+			return;
+		}
+
+		$watched_keys = array('governance_status', 'finance_status', 'lat', 'lng', 'cidade', 'uf', 'nome_fantasia', 'razao_social');
+		if (!in_array((string) $meta_key, $watched_keys, true)) {
+			return;
+		}
+
+		rma_map_bump_cache_version($post_id);
+	}
+	add_action('updated_post_meta', 'rma_map_bump_cache_on_meta_change', 10, 4);
+	add_action('added_post_meta', 'rma_map_bump_cache_on_meta_change', 10, 4);
+	add_action('deleted_post_meta', 'rma_map_bump_cache_on_meta_change', 10, 4);
 }
 
 if (!function_exists('rma_register_map_entities_rest_route')) {
