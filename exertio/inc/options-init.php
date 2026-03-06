@@ -8956,6 +8956,14 @@ Redux::setSection($opt_name, array(
 			'required' => array(array('rma_map_directory_mode', 'equals', 'iframe')),
 		),
 		array(
+			'id' => 'rma_map_directory_page_url',
+			'type' => 'text',
+			'title' => __('URL da página interna do diretório', 'exertio_theme'),
+			'subtitle' => __('URL da página com shortcode [rma_map_directory] quando o modo for "Lista interna".', 'exertio_theme'),
+			'validate' => 'url',
+			'required' => array(array('rma_map_directory_mode', 'equals', 'internal')),
+		),
+		array(
 			'id' => 'employer_dashboard_sidebar_sortable',
 			'type' => 'sortable',
 			'title' => __('Employer Dashboard Sidebar Menu', 'exertio_theme'),
