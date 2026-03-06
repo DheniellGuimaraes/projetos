@@ -11931,11 +11931,21 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						RS:{x:700,y:820}, RO:{x:350,y:520}, RR:{x:520,y:200}, SC:{x:760,y:770}, SP:{x:800,y:680},
 						SE:{x:880,y:520}, TO:{x:720,y:450}
 					};
-					const stateCoordinatesBase = { width: 1000, height: 900 };
+					const stateCoordinatesBase = { width: 1000, height: 1000 };
 					let mapDimensions = { minX: 0, minY: 0, width: 460, height: 465 };
 
 					function detectMapDimensions(){
 						if (!mapSvg) return;
+						const nativeViewBox = mapSvg.viewBox && mapSvg.viewBox.baseVal ? mapSvg.viewBox.baseVal : null;
+						if (nativeViewBox && Number.isFinite(Number(nativeViewBox.width)) && Number(nativeViewBox.width) > 0 && Number.isFinite(Number(nativeViewBox.height)) && Number(nativeViewBox.height) > 0) {
+							mapDimensions = {
+								minX: Number.isFinite(Number(nativeViewBox.x)) ? Number(nativeViewBox.x) : 0,
+								minY: Number.isFinite(Number(nativeViewBox.y)) ? Number(nativeViewBox.y) : 0,
+								width: Number(nativeViewBox.width),
+								height: Number(nativeViewBox.height)
+							};
+							return;
+						}
 						const viewBox = String(mapSvg.getAttribute('viewBox') || '').trim().split(/\s+/);
 						if (viewBox.length === 4) {
 							const width = Number(viewBox[2]);
@@ -12016,9 +12026,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					if (!point) return null;
 					const scaleX = mapDimensions.width / stateCoordinatesBase.width;
 					const scaleY = mapDimensions.height / stateCoordinatesBase.height;
+					const x = mapDimensions.minX + (Number(point.x) * scaleX);
+					const y = mapDimensions.minY + (Number(point.y) * scaleY);
+					if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+					if (x < mapDimensions.minX || x > (mapDimensions.minX + mapDimensions.width) || y < mapDimensions.minY || y > (mapDimensions.minY + mapDimensions.height)) {
+						return null;
+					}
 					return [
-						mapDimensions.minX + (Number(point.x) * scaleX),
-						mapDimensions.minY + (Number(point.y) * scaleY)
+						x,
+						y
 					];
 				}
 
