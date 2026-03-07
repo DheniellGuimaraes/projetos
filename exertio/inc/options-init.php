@@ -12050,19 +12050,20 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					detectMapDimensions();
 					annotateSvgStates();
 
-				function getFixedStatePinCoords(state){
-					const normalizedState = String(state || '').trim().toUpperCase();
-					const point = statePinCoordinates[normalizedState] || null;
-					if (!point) return null;
-					const px = Number(point.px);
-					const py = Number(point.py);
-					if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
-					const x = mapDimensions.width * px;
-					const y = mapDimensions.height * py;
-					if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-					if (x < 0 || x > mapDimensions.width || y < 0 || y > mapDimensions.height) {
-						return null;
-					}
+					function getFixedStatePinCoords(state){
+						const normalizedState = String(state || '').trim().toUpperCase();
+						const point = statePinCoordinates[normalizedState] || null;
+						if (!point) return null;
+						const px = Number(point.px);
+						const py = Number(point.py);
+						if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
+						if (px < 0 || px > 1 || py < 0 || py > 1) return null;
+						const x = mapDimensions.minX + (mapDimensions.width * px);
+						const y = mapDimensions.minY + (mapDimensions.height * py);
+						if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+						if (x < mapDimensions.minX || x > (mapDimensions.minX + mapDimensions.width) || y < mapDimensions.minY || y > (mapDimensions.minY + mapDimensions.height)) {
+							return null;
+						}
 					return [
 						x,
 						y
