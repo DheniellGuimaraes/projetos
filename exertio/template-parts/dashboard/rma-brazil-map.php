@@ -73,7 +73,7 @@ $map_background_url = function_exists('get_template_directory_uri')
 	: '/exertio/images/mapa.svg';
 ?>
 <style>
-	#map.rma-brazil-svg{
+	#map.rma-map-svg{
 		width:100%;
 		max-width:896px;
 		height:auto;
@@ -106,7 +106,7 @@ $map_background_url = function_exists('get_template_directory_uri')
 	}
 </style>
 <div class="box-mapa" data-map-source="<?php echo $svg_markup !== '' ? esc_attr('real-svg') : esc_attr('fallback'); ?>">
-		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="2688" height="2713" style="display:inline;" class="rma-brazil-svg brazil-svg" role="img" aria-label="Mapa do Brasil com estados" preserveAspectRatio="xMidYMid meet">
+		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="2688" height="2713" style="display:inline;" class="rma-map-svg" role="img" aria-label="Mapa do Brasil com estados" preserveAspectRatio="xMidYMid meet">
 		<g class="model-davi">
 			<desc>Brasil</desc>
 			<?php foreach ($state_paths as $uf => $path) : ?>
