@@ -12332,6 +12332,11 @@ if (!function_exists('rma_map_dashboard_ext_targeted_content')) {
 		if ($dashboard_content_html === '') {
 			return;
 		}
+
+		$dashboard_content_html = preg_replace('/<h3[^>]*>\s*Mapa de ONGs\s*[—-]\s*Modo Turbo\s*<\/h3>/iu', '', $dashboard_content_html);
+		$dashboard_content_html = preg_replace('/<p[^>]*>\s*Experi[eê]ncia premium com dados focados exclusivamente no diret[óo]rio geogr[áa]fico das ONGs\.\s*<\/p>/iu', '', $dashboard_content_html);
+		$dashboard_content_html = preg_replace('/<div[^>]*class=["\']rma-map-intro["\'][^>]*>[\s\S]*?<\/div>/iu', '', $dashboard_content_html);
+		$dashboard_content_html = trim((string) $dashboard_content_html);
 		?>
 			<script>
 			(function(){
