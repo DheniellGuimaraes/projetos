@@ -11531,10 +11531,6 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				.rma-map-brazil-grid button{border:1px solid rgba(52,211,153,.55);border-radius:10px;background:rgba(255,255,255,.82);color:#166534;font-size:12px;font-weight:700;height:34px}
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
-				<div class="rma-map-intro">
-					<h3><?php echo esc_html__('Busca Geográfica de ONGs', 'exertio_theme'); ?></h3>
-					<p><?php echo esc_html__('Consulte entidades cadastradas, com filtros por estado e cidade para facilitar a busca e localização.', 'exertio_theme'); ?></p>
-				</div>
 				<div class="rma-map-kpis" aria-live="polite">
 					<div class="rma-map-kpi"><b data-rma-kpi="total"><?php echo esc_html($initial_total); ?></b><span><?php echo esc_html__('ONGs no diretório', 'exertio_theme'); ?></span></div>
 					<div class="rma-map-kpi"><b data-rma-kpi="adimplente"><?php echo esc_html($initial_adimplente); ?></b><span><?php echo esc_html__('Adimplentes', 'exertio_theme'); ?></span></div>
