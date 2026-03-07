@@ -12033,6 +12033,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const normalizedState = String(state || '').trim().toLowerCase();
 						const statePinOffsets = {
 							mg: { x: 18, y: -18 },
+							sp: { x: 20, y: -26 },
 						};
 						const offset = statePinOffsets[normalizedState] || { x: 0, y: 0 };
 						return [coords[0] + Number(offset.x || 0), coords[1] + Number(offset.y || 0)];
