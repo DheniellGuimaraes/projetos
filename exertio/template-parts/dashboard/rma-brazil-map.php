@@ -72,7 +72,7 @@ $svg_markup = '';
 <style>
 	#map.rma-brazil-svg{
 		width:100%;
-		max-width:1280px;
+		max-width:896px;
 		height:auto;
 		margin:0 auto;
 		display:block;
@@ -83,9 +83,7 @@ $svg_markup = '';
 		text-rendering:optimizeLegibility;
 	}
 	#map .state path{
-		stroke:#8af1cb;
-		stroke-opacity:.9;
-		stroke-width:1.4;
+		stroke:none;
 		transition:all .2s ease;
 		filter:none;
 		transform-box:fill-box;
@@ -102,13 +100,12 @@ $svg_markup = '';
 	#map .state:hover path,
 	#map .state.is-active path{
 		fill:#d6f2df !important;
-		stroke:#ffffff;
-		stroke-width:1.6;
+		stroke:none;
 		transform:translateY(-1px);
 	}
 </style>
 <div class="box-mapa" data-map-source="<?php echo $svg_markup !== '' ? esc_attr('real-svg') : esc_attr('fallback'); ?>">
-		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="3840" height="3876" style="display:inline;" class="rma-brazil-svg brazil-svg" role="img" aria-label="Mapa do Brasil com estados" preserveAspectRatio="xMidYMid meet">
+		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="2688" height="2713" style="display:inline;" class="rma-brazil-svg brazil-svg" role="img" aria-label="Mapa do Brasil com estados" preserveAspectRatio="xMidYMid meet">
 		<g class="model-davi">
 			<desc>Brasil</desc>
 			<?php foreach ($state_paths as $uf => $path) : ?>
