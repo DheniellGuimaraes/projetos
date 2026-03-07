@@ -11487,7 +11487,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-states{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
 			.rma-map-state-chip{border:1px solid #d8d8d8;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;background:#fafafa}
 			.rma-map-state-chip.is-active{background:#0d6efd;color:#fff;border-color:#0d6efd}
-			.rma-map-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+			.rma-map-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:1200px;margin:0 auto;padding:0 16px;box-sizing:border-box}
 			.rma-map-results .rma-item{position:relative;overflow:hidden;border:1px solid rgba(167,243,208,.30);border-radius:5px;padding:16px;background:radial-gradient(120% 120% at 0% 0%,rgba(110,231,183,.32),rgba(16,185,129,.16) 40%,rgba(6,78,59,.55) 100%),linear-gradient(135deg,rgba(16,185,129,.35),rgba(5,150,105,.28));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 14px 30px rgba(5,150,105,.28),inset 0 1px 0 rgba(255,255,255,.2)}
 			.rma-map-pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px}
 			.rma-map-intro{margin-bottom:14px}
@@ -11511,8 +11511,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-results .rma-item p{margin:0 0 6px;font-size:13px;line-height:1.35}
 			.rma-map-results .rma-item a{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:8px 12px;border-radius:999px;font-weight:800;letter-spacing:.2px;color:#065f46;background:linear-gradient(135deg,#ecfdf5,#d1fae5);box-shadow:0 6px 14px rgba(16,185,129,.28);text-decoration:none;transition:transform .16s ease,filter .16s ease}
 			.rma-map-results .rma-item a:hover{transform:translateY(-1px);filter:brightness(1.02)}
-			@media (max-width: 1100px){.rma-map-results{grid-template-columns:repeat(2,minmax(0,1fr));}}
-			@media (max-width: 700px){.rma-map-results{grid-template-columns:1fr;}}
+			@media (max-width: 1100px){.rma-map-results{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 12px;}}
+			@media (max-width: 700px){.rma-map-results{grid-template-columns:1fr;padding:0 8px;}}
 			.rma-map-empty{padding:16px;border:1px dashed #cfd8e3;border-radius:12px;background:#f8fbff;color:#334155;font-weight:600}
 			.rma-map-brazil{margin:6px 0 14px;padding:16px;border:1px solid rgba(255,255,255,.58);border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,255,255,.58));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
 			.rma-map-brazil h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#0f172a}
