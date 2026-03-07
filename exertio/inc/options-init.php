@@ -12074,8 +12074,13 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (px < 0 || px > 1 || py < 0 || py > 1) return null;
 						const svg = document.querySelector('#map') || mapSvg;
 						const vb = svg && svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
-						const x = vb ? (vb.x + (vb.width * px)) : (mapDimensions.minX + (mapDimensions.width * px));
-						const y = vb ? (vb.y + (vb.height * py)) : (mapDimensions.minY + (mapDimensions.height * py));
+						let x = vb ? (vb.x + (vb.width * px)) : (mapDimensions.minX + (mapDimensions.width * px));
+						let y = vb ? (vb.y + (vb.height * py)) : (mapDimensions.minY + (mapDimensions.height * py));
+						// Temporary fallback to keep markers visible while coordinate normalization is stabilized.
+						if (vb && (x > (vb.width * 2) || y > (vb.height * 2))) {
+							x = x / 10;
+							y = y / 10;
+						}
 						if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 						const minX = vb ? vb.x : mapDimensions.minX;
 						const minY = vb ? vb.y : mapDimensions.minY;
