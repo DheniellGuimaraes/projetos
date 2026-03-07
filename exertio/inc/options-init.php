@@ -11294,6 +11294,10 @@ if (!function_exists('rma_map_fetch_entities')) {
 			$paged_items = array();
 		} else {
 			$offset = ($page - 1) * $per_page;
+			if ($total > 0 && $offset >= $total) {
+				$page = 1;
+				$offset = 0;
+			}
 			$paged_items = array_slice($entities, $offset, $per_page);
 		}
 
@@ -11848,7 +11852,9 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							renderItems(payload.items || []);
 							renderMapPins(resolveMapMarkers(data));
 							renderPagination(payload.pagination || null);
-							currentPage = safePage;
+							currentPage = (payload && payload.pagination && Number.isFinite(Number(payload.pagination.page)))
+								? Math.max(1, parseInt(payload.pagination.page, 10))
+								: safePage;
 					} catch (e) {
 						if (e && e.name === 'AbortError') {
 							return;
