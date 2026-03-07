@@ -12028,7 +12028,14 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					annotateSvgStates();
 
 					function getFixedStatePinCoords(state){
-						return getStateCentroidFromSvg(state);
+						const coords = getStateCentroidFromSvg(state);
+						if (!coords) return null;
+						const normalizedState = String(state || '').trim().toLowerCase();
+						const statePinOffsets = {
+							mg: { x: 10, y: -8 },
+						};
+						const offset = statePinOffsets[normalizedState] || { x: 0, y: 0 };
+						return [coords[0] + Number(offset.x || 0), coords[1] + Number(offset.y || 0)];
 					}
 
 
