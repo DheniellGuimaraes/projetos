@@ -11504,22 +11504,22 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				#map .state .label_icon_state{fill:#666;font-family:Arial,sans-serif;font-size:11px;line-height:12px;font-weight:400}
 				#map .state .label_state{display:none;font-family:Arial,sans-serif;font-size:14px;line-height:16px;font-weight:700;fill:#fff}
 					#map .model-davi .state .shape,#map .state path,#map .state polygon,#map path.state,#map polygon.state,#map circle.state,#map ellipse.state{fill:#d1d5db}
-					#map .state.has-ong .shape,#map .state.has-ong path,#map .state.has-ong polygon,#map path.state.has-ong,#map polygon.state.has-ong,#map circle.state.has-ong,#map ellipse.state.has-ong{fill:url(#rmaMapGreenGradient)}
+					#map .state.has-ong .shape,#map .state.has-ong path,#map .state.has-ong polygon,#map path.state.has-ong,#map polygon.state.has-ong,#map circle.state.has-ong,#map ellipse.state.has-ong{fill:transparent !important}
 				#map .model-davi .state .icon_state{fill:#0f766e}
 				#map .model-davi .state:hover .shape,
 				#map .model-davi .state.is-active .shape,
 				#map .state:hover path,
 				#map .state.is-active path,
 				#map .state:hover polygon,
-					#map .state.is-active polygon{fill:url(#rmaMapGreenGradientActive) !important}
+					#map .state.is-active polygon{fill:transparent !important}
 				#map .state.is-active .shape,
 					#map .state.is-active path,
-					#map .state.is-active polygon{fill:url(#rmaMapGreenGradientActive) !important;stroke:#14532d !important;stroke-width:1.15}
+					#map .state.is-active polygon{fill:transparent !important;stroke:none !important;stroke-width:0}
 				#map .model-davi .state:hover .icon_state,#map .model-davi .state.is-active .icon_state{fill:#039be5}
 					#map .model-davi .state:hover .label_icon_state,#map .model-davi .state.is-active .label_icon_state{fill:#fff}
 					#map .model-davi .state:hover .label_state,#map .model-davi .state.is-active .label_state{display:block;fill:#fff !important}
 						.rma-map-pin{pointer-events:auto;cursor:pointer;transition:filter .14s ease,opacity .14s ease}
-						.rma-map-pin:hover,.rma-map-pin:focus{filter:drop-shadow(0 0 4px rgba(22,163,74,.35))}
+						.rma-map-pin:hover,.rma-map-pin:focus{filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}
 						.rma-map-pin:focus{outline:none}
 						#rma-map-tooltip{position:absolute;z-index:30;pointer-events:none;max-width:260px;padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.92);color:#fff;font-size:12px;line-height:1.35;box-shadow:0 10px 24px rgba(2,6,23,.22);opacity:0;transform:translate(-50%,-110%);transition:opacity .15s ease}
 						#rma-map-tooltip a{color:#93c5fd;text-decoration:underline;pointer-events:auto}
@@ -12032,7 +12032,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (!coords) return null;
 						const normalizedState = String(state || '').trim().toLowerCase();
 						const statePinOffsets = {
-							mg: { x: 10, y: -8 },
+							mg: { x: 18, y: -18 },
 						};
 						const offset = statePinOffsets[normalizedState] || { x: 0, y: 0 };
 						return [coords[0] + Number(offset.x || 0), coords[1] + Number(offset.y || 0)];
@@ -12074,14 +12074,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 					function updateMapStateHighlights(markers){
 						if (!mapSvg) return;
-						const statesWithMarkers = new Set();
-						(Array.isArray(markers) ? markers : []).forEach((marker) => {
-							if (!marker || String(marker.adimplencia || '') !== 'adimplente') return;
-							const state = String(marker.state || marker.uf || '').toLowerCase();
-							if (/^[a-z]{2}$/.test(state)) statesWithMarkers.add(state);
-						});
 						mapSvg.querySelectorAll('.state[data-state]').forEach((node) => {
-							node.classList.toggle('has-ong', statesWithMarkers.has(String(node.dataset.state || '').toLowerCase()));
+							node.classList.remove('has-ong');
 						});
 					}
 
@@ -12094,47 +12088,58 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							group.setAttribute('id', 'rma-map-pins');
 						}
 						group.innerHTML = '';
-						markers.forEach((marker, idx) => {
+						markers.forEach((marker) => {
 							if (!marker || String(marker.adimplencia || 'adimplente') !== 'adimplente') return;
 							const coords = mapCoordsFromGeoOrState(marker);
 							if (!coords) return;
-							const jitterX = ((idx % 7) - 3) * 1.8;
-							const jitterY = (((idx * 3) % 7) - 3) * 1.4;
-							const x = coords[0] + jitterX;
-							const y = coords[1] + jitterY;
+							const x = coords[0];
+							const y = coords[1];
 							const markerName = String((marker && marker.name) || '').trim();
 							const markerCity = String((marker && marker.city) || '').trim();
 							const markerState = String((marker && marker.state) || '').trim().toUpperCase();
 							const markerLocation = markerCity && markerState ? (markerCity + ' - ' + markerState) : (markerCity || markerState);
 							const markerStatus = String((marker && marker.adimplencia) || 'adimplente').trim();
 							const markerProfileUrl = String((marker && marker.profileUrl) || '').trim();
-							const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-							circle.setAttribute('r', '6');
-							circle.setAttribute('class', 'rma-map-pin');
-							circle.setAttribute('fill', '#ff3b30');
-							circle.setAttribute('transform', `translate(${x},${y})`);
-							circle.setAttribute('cx', '0');
-							circle.setAttribute('cy', '0');
-							circle.setAttribute('tabindex', '0');
-							circle.setAttribute('role', 'button');
-							circle.setAttribute('aria-label', [markerName || 'ONG', markerLocation || '', 'Status ' + markerStatus].filter(Boolean).join(', '));
-							circle.setAttribute('data-name', markerName);
-							circle.setAttribute('data-location', markerLocation);
-							circle.setAttribute('data-status', markerStatus.charAt(0).toUpperCase() + markerStatus.slice(1));
-							circle.setAttribute('data-profile-url', markerProfileUrl);
+							const pin = document.createElementNS(ns, 'g');
+							pin.setAttribute('class', 'rma-map-pin');
+							pin.setAttribute('transform', `translate(${x},${y})`);
+							pin.setAttribute('tabindex', '0');
+							pin.setAttribute('role', 'button');
+							pin.setAttribute('aria-label', [markerName || 'ONG', markerLocation || '', 'Status ' + markerStatus].filter(Boolean).join(', '));
+							pin.setAttribute('data-name', markerName);
+							pin.setAttribute('data-location', markerLocation);
+							pin.setAttribute('data-status', markerStatus.charAt(0).toUpperCase() + markerStatus.slice(1));
+							pin.setAttribute('data-profile-url', markerProfileUrl);
+
+							const body = document.createElementNS(ns, 'path');
+							body.setAttribute('d', 'M0 -12 C5 -12 9 -8 9 -3 C9 2 5 6 0 12 C-5 6 -9 2 -9 -3 C-9 -8 -5 -12 0 -12 Z');
+							body.setAttribute('fill', '#f97316');
+							body.setAttribute('stroke', '#ea580c');
+							body.setAttribute('stroke-width', '1');
+
+							const hole = document.createElementNS(ns, 'circle');
+							hole.setAttribute('cx', '0');
+							hole.setAttribute('cy', '-3');
+							hole.setAttribute('r', '3.2');
+							hole.setAttribute('fill', '#fff7ed');
+
 							const title = document.createElementNS(ns, 'title');
 							title.textContent = markerLocation ? `${markerName}\n${markerLocation}` : markerName;
-							circle.appendChild(title);
-							circle.addEventListener('mouseenter', (ev) => showPinTooltip(circle, ev.clientX, ev.clientY));
-							circle.addEventListener('mousemove', (ev) => showPinTooltip(circle, ev.clientX, ev.clientY));
-							circle.addEventListener('mouseleave', hidePinTooltip);
-							circle.addEventListener('focus', () => showPinTooltip(circle));
-							circle.addEventListener('blur', hidePinTooltip);
+
+							pin.appendChild(body);
+							pin.appendChild(hole);
+							pin.appendChild(title);
+
+							pin.addEventListener('mouseenter', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
+							pin.addEventListener('mousemove', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
+							pin.addEventListener('mouseleave', hidePinTooltip);
+							pin.addEventListener('focus', () => showPinTooltip(pin));
+							pin.addEventListener('blur', hidePinTooltip);
 							const pinsLayer = document.querySelector('#rma-map-pins');
 							if (pinsLayer) {
-								pinsLayer.appendChild(circle);
+								pinsLayer.appendChild(pin);
 							} else {
-								group.appendChild(circle);
+								group.appendChild(pin);
 							}
 						});
 						const svg = document.querySelector('#map');
