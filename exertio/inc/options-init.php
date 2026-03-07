@@ -11615,8 +11615,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				let activeRequestId = 0;
 				let activeController = null;
 				const allowedAdimplencia = new Set(['adimplente', 'inadimplente', 'all']);
-				const initialMapMarkers = <?php echo wp_json_encode($initial_map_markers); ?>;
-				const mapStatePoints = {rr:[170,48],ap:[295,72],am:[165,118],pa:[265,130],ac:[78,150],ro:[125,168],to:[260,184],ma:[320,146],pi:[350,172],ce:[382,162],rn:[413,172],pb:[405,195],pe:[388,210],al:[395,231],se:[386,245],ba:[350,256],mt:[210,236],ms:[200,300],go:[258,262],df:[268,258],mg:[312,292],es:[351,304],rj:[334,328],sp:[286,334],pr:[275,371],sc:[287,401],rs:[272,435]};
+					const initialMapMarkers = <?php echo wp_json_encode($initial_map_markers); ?>;
 
 					function setBusy(isBusy){
 					root.setAttribute('aria-busy', isBusy ? 'true' : 'false');
@@ -11962,6 +11961,24 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						RS:{px:0.58,py:0.88}, RO:{px:0.35,py:0.52}, RR:{px:0.52,py:0.20}, SC:{px:0.76,py:0.77}, SP:{px:0.60,py:0.70},
 						SE:{px:0.88,py:0.52}, TO:{px:0.72,py:0.45}
 					};
+
+					function normalizePinRatio(value){
+						const numeric = Number(value);
+						if (!Number.isFinite(numeric)) return null;
+						if (numeric >= 0 && numeric <= 1) return numeric;
+						if (numeric > 1 && numeric <= 100) return numeric / 100;
+						return null;
+					}
+
+					const normalizedStatePinCoordinates = Object.keys(statePinCoordinates).reduce((acc, stateCode) => {
+						const point = statePinCoordinates[stateCode] || null;
+						if (!point) return acc;
+						const px = normalizePinRatio(point.px);
+						const py = normalizePinRatio(point.py);
+						if (px === null || py === null) return acc;
+						acc[stateCode] = { px, py };
+						return acc;
+					}, {});
 					let mapDimensions = { minX: 0, minY: 0, width: 460, height: 465 };
 
 					function detectMapDimensions(){
@@ -12052,7 +12069,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 					function getFixedStatePinCoords(state){
 						const normalizedState = String(state || '').trim().toUpperCase();
-						const point = statePinCoordinates[normalizedState] || null;
+						const point = normalizedStatePinCoordinates[normalizedState] || null;
 						if (!point) return null;
 						const px = Number(point.px);
 						const py = Number(point.py);
