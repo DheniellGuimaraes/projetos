@@ -68,6 +68,9 @@ $state_paths = array(
 
 
 $svg_markup = '';
+$map_background_url = function_exists('get_template_directory_uri')
+	? trailingslashit(get_template_directory_uri()) . 'images/mapa.svg'
+	: '/exertio/images/mapa.svg';
 ?>
 <style>
 	#map.rma-brazil-svg{
@@ -76,7 +79,7 @@ $svg_markup = '';
 		height:auto;
 		margin:0 auto;
 		display:block;
-		background:url("/exertio/images/mapa.svg") center center / contain no-repeat;
+		background:url("<?php echo esc_url($map_background_url); ?>") center center / contain no-repeat;
 		border-radius:12px;
 		padding:2px;
 		shape-rendering:geometricPrecision;
