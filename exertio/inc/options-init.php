@@ -11491,7 +11491,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-state-chip{border:1px solid #d8d8d8;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;background:#fafafa}
 			.rma-map-state-chip.is-active{background:#0d6efd;color:#fff;border-color:#0d6efd}
 			.rma-map-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:1200px;margin:0 auto;padding:0 16px;box-sizing:border-box}
-			.rma-map-results .rma-item{position:relative;overflow:hidden;border:1px solid rgba(167,243,208,.30);border-radius:5px;padding:16px;background:linear-gradient(135deg,rgba(6,78,59,.62),rgba(5,150,105,.44)),url("<?php echo esc_url($rma_cards_bg_url); ?>") center/cover no-repeat;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 14px 30px rgba(5,150,105,.28),inset 0 1px 0 rgba(255,255,255,.2)}
+			.rma-map-results .rma-item{position:relative;overflow:hidden;border:1px solid rgba(167,243,208,.30);border-radius:40px;padding:25px;background:linear-gradient(135deg,rgba(6,78,59,.62),rgba(5,150,105,.44)),url("<?php echo esc_url($rma_cards_bg_url); ?>") center/cover no-repeat;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 14px 30px rgba(5,150,105,.28),inset 0 1px 0 rgba(255,255,255,.2)}
 			.rma-map-pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px}
 			.rma-map-intro{margin-bottom:14px}
 			.rma-map-intro h3{margin:0 0 6px;font-size:22px}
@@ -11504,7 +11504,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-intro h3{font-size:34px;line-height:1.1;color:#0f172a;font-weight:800}
 			.rma-map-filters input,.rma-map-filters select{border:1px solid #d9e1ea;border-radius:12px;padding:0 12px;background:#fff;color:#0f172a}
 			.rma-map-filters button{border:0;border-radius:12px;background:#111827;color:#fff;font-weight:700}
-			.rma-map-results .rma-item{position:relative;overflow:hidden;border:1px solid rgba(167,243,208,.30);border-radius:5px;padding:16px;background:linear-gradient(135deg,rgba(6,78,59,.62),rgba(5,150,105,.44)),url("<?php echo esc_url($rma_cards_bg_url); ?>") center/cover no-repeat;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 14px 30px rgba(5,150,105,.28),inset 0 1px 0 rgba(255,255,255,.2)}
+			.rma-map-results .rma-item{position:relative;overflow:hidden;border:1px solid rgba(167,243,208,.30);border-radius:40px;padding:25px;background:linear-gradient(135deg,rgba(6,78,59,.62),rgba(5,150,105,.44)),url("<?php echo esc_url($rma_cards_bg_url); ?>") center/cover no-repeat;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 14px 30px rgba(5,150,105,.28),inset 0 1px 0 rgba(255,255,255,.2)}
 			.rma-map-results .rma-item h4{margin:0 0 6px;font-size:16px;font-weight:800;color:#fff}
 			.rma-map-results .rma-item p{color:rgba(255,255,255,.92)}
 			.rma-map-results .rma-item::before{content:"";position:absolute;inset:-35% auto auto -20%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(167,243,208,.30),rgba(167,243,208,0));pointer-events:none}
