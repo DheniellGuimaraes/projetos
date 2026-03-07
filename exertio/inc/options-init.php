@@ -11781,7 +11781,12 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					if (searchInput) {
 						searchInput.value = searchTerm;
 					}
+					if (searchTerm) {
+						params.set('search', searchTerm);
+						params.set('q', searchTerm);
+					}
 					for (const [k,v] of fd.entries()) {
+						if (k === 'search') continue;
 						const normalizedValue = String(v || '').trim();
 						if (!normalizedValue) continue;
 						if (k === 'state') {
@@ -11800,9 +11805,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const safeText = normalizeFilterText(normalizedValue, textLimit);
 						if (!safeText) continue;
 						params.set(k, safeText);
-						if (k === 'search') {
-							params.set('q', safeText);
-						}
+
 					}
 					if (!searchTerm) {
 						feedback.textContent = '<?php echo esc_js(__('Digite uma busca para listar entidades.', 'exertio_theme')); ?>';
