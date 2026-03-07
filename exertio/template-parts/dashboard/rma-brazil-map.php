@@ -81,18 +81,18 @@ $svg_markup = '';
 		padding:2px;
 	}
 	#map .state path{
-		stroke:#7ed7c8;
+		stroke:#53d9af;
 		stroke-width:1;
 		transition:all .2s ease;
-		filter:drop-shadow(0 4px 6px rgba(0,0,0,.10));
+		filter:drop-shadow(0 2px 4px rgba(0,0,0,.08));
 		transform-box:fill-box;
 		transform-origin:center;
 	}
-	#map .state[data-region="1"] path{fill:#043b3a;}
-	#map .state[data-region="2"] path{fill:#0d5f56;}
-	#map .state[data-region="3"] path{fill:#10a996;}
-	#map .state[data-region="4"] path{fill:#1adfc1;}
-	#map .state[data-region="5"] path{fill:#0a6a5f;}
+	#map .state[data-region="1"] path{fill:#00a100;}
+	#map .state[data-region="2"] path{fill:#0ccf4f;}
+	#map .state[data-region="3"] path{fill:#00d100;}
+	#map .state[data-region="4"] path{fill:#9fd52d;}
+	#map .state[data-region="5"] path{fill:#00a500;}
 	#map .state.has-ong path{fill:#9deec4 !important;}
 	#map .state:hover path,
 	#map .state.is-active path{
@@ -101,7 +101,7 @@ $svg_markup = '';
 	}
 </style>
 <div class="box-mapa" data-map-source="<?php echo $svg_markup !== '' ? esc_attr('real-svg') : esc_attr('fallback'); ?>">
-	<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="460" height="465" style="display:inline;" class="rma-brazil-svg brazil-svg" role="img" aria-label="Mapa do Brasil com estados">
+		<svg id="map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 465" width="1840" height="1860" style="display:inline;" class="rma-brazil-svg brazil-svg" role="img" aria-label="Mapa do Brasil com estados">
 		<g class="model-davi">
 			<desc>Brasil</desc>
 			<?php foreach ($state_paths as $uf => $path) : ?>
