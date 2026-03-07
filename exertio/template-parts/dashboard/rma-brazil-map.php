@@ -76,9 +76,9 @@ $svg_markup = '';
 		height:auto;
 		margin:0 auto;
 		display:block;
-		background:linear-gradient(180deg,#f7f9fb 0%,#eef3f7 100%);
+		background:transparent;
 		border-radius:16px;
-		padding:8px;
+		padding:2px;
 	}
 	#map .state path{
 		stroke:#7ed7c8;

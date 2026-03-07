@@ -11518,8 +11518,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				#map .model-davi .state:hover .icon_state,#map .model-davi .state.is-active .icon_state{fill:#039be5}
 					#map .model-davi .state:hover .label_icon_state,#map .model-davi .state.is-active .label_icon_state{fill:#fff}
 					#map .model-davi .state:hover .label_state,#map .model-davi .state.is-active .label_state{display:block;fill:#fff !important}
-						.rma-map-pin{pointer-events:auto;cursor:pointer;transition:transform .2s ease,filter .2s ease,opacity .2s ease;transform-origin:center center}
-						.rma-map-pin:hover,.rma-map-pin:focus{filter:drop-shadow(0 0 8px rgba(22,163,74,.6));transform:scale(1.18)}
+						.rma-map-pin{pointer-events:auto;cursor:pointer;transition:filter .14s ease,opacity .14s ease}
+						.rma-map-pin:hover,.rma-map-pin:focus{filter:drop-shadow(0 0 4px rgba(22,163,74,.35))}
 						.rma-map-pin:focus{outline:none}
 						#rma-map-tooltip{position:absolute;z-index:30;pointer-events:none;max-width:260px;padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.92);color:#fff;font-size:12px;line-height:1.35;box-shadow:0 10px 24px rgba(2,6,23,.22);opacity:0;transform:translate(-50%,-110%);transition:opacity .15s ease}
 						#rma-map-tooltip a{color:#93c5fd;text-decoration:underline;pointer-events:auto}
