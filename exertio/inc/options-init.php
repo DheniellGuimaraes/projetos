@@ -11487,8 +11487,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-states{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
 			.rma-map-state-chip{border:1px solid #d8d8d8;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;background:#fafafa}
 			.rma-map-state-chip.is-active{background:#0d6efd;color:#fff;border-color:#0d6efd}
-			.rma-map-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-			.rma-map-results .rma-item{border:1px solid #efefef;border-radius:6px;padding:12px}
+			.rma-map-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+			.rma-map-results .rma-item{border:1px solid rgba(255,255,255,.28);border-radius:5px;padding:14px;background:linear-gradient(135deg,rgba(16,185,129,.42),rgba(5,150,105,.34));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 10px 24px rgba(5,150,105,.25)}
 			.rma-map-pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px}
 			.rma-map-intro{margin-bottom:14px}
 			.rma-map-intro h3{margin:0 0 6px;font-size:22px}
@@ -11501,9 +11501,12 @@ if (!function_exists('rma_map_directory_shortcode')) {
 			.rma-map-intro h3{font-size:34px;line-height:1.1;color:#0f172a;font-weight:800}
 			.rma-map-filters input,.rma-map-filters select{border:1px solid #d9e1ea;border-radius:12px;padding:0 12px;background:#fff;color:#0f172a}
 			.rma-map-filters button{border:0;border-radius:12px;background:#111827;color:#fff;font-weight:700}
-			.rma-map-results .rma-item{border:1px solid rgba(255,255,255,.5);border-radius:16px;padding:14px;background:rgba(255,255,255,.75);box-shadow:0 10px 24px rgba(2,6,23,.08)}
-			.rma-map-results .rma-item h4{margin:0 0 6px;font-size:16px;font-weight:800;color:#0f172a}
-			.rma-map-results .rma-item a{display:inline-block;margin-top:6px;font-weight:700;color:#2563eb}
+			.rma-map-results .rma-item{border:1px solid rgba(255,255,255,.28);border-radius:5px;padding:14px;background:linear-gradient(135deg,rgba(16,185,129,.42),rgba(5,150,105,.34));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 10px 24px rgba(5,150,105,.25)}
+			.rma-map-results .rma-item h4{margin:0 0 6px;font-size:16px;font-weight:800;color:#fff}
+			.rma-map-results .rma-item p{color:rgba(255,255,255,.92)}
+			.rma-map-results .rma-item a{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;padding:6px 10px;border-radius:999px;font-weight:700;color:#065f46;background:rgba(255,255,255,.92)}
+			@media (max-width: 1100px){.rma-map-results{grid-template-columns:repeat(2,minmax(0,1fr));}}
+			@media (max-width: 700px){.rma-map-results{grid-template-columns:1fr;}}
 			.rma-map-empty{padding:16px;border:1px dashed #cfd8e3;border-radius:12px;background:#f8fbff;color:#334155;font-weight:600}
 			.rma-map-brazil{margin:6px 0 14px;padding:16px;border:1px solid rgba(255,255,255,.58);border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,255,255,.58));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
 			.rma-map-brazil h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#0f172a}
