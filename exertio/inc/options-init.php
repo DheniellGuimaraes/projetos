@@ -11465,6 +11465,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		$initial_adimplente = isset($initial_status_count['adimplente']) ? absint($initial_status_count['adimplente']) : 0;
 		$initial_inadimplente = isset($initial_status_count['inadimplente']) ? absint($initial_status_count['inadimplente']) : 0;
 		$initial_map_markers = rma_map_get_adimplente_map_markers(300);
+		$can_view_adimplencia_status = function_exists('is_super_admin') && is_super_admin();
 
 		ob_start();
 		?>
@@ -11616,6 +11617,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				let activeController = null;
 				const allowedAdimplencia = new Set(['adimplente', 'inadimplente', 'all']);
 					const initialMapMarkers = <?php echo wp_json_encode($initial_map_markers); ?>;
+					const canViewAdimplenciaStatus = <?php echo $can_view_adimplencia_status ? 'true' : 'false'; ?>;
 
 					function setBusy(isBusy){
 					root.setAttribute('aria-busy', isBusy ? 'true' : 'false');
@@ -11931,11 +11933,11 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (!el || !pin || !mapPanel) return;
 						const name = String(pin.getAttribute('data-name') || '').trim();
 						const location = String(pin.getAttribute('data-location') || '').trim();
-						const status = String(pin.getAttribute('data-status') || '').trim() || 'Adimplente';
+						const status = String(pin.getAttribute('data-status') || '').trim();
 						const profileUrl = String(pin.getAttribute('data-profile-url') || '').trim();
 						let html = '<strong>' + escapeHtml(name || 'ONG') + '</strong>';
 						if (location) html += '<div>' + escapeHtml(location) + '</div>';
-						html += '<div>Status: ' + escapeHtml(status) + '</div>';
+						if (canViewAdimplenciaStatus && status) html += '<div>Status: ' + escapeHtml(status) + '</div>';
 						if (profileUrl && /^https?:\/\//i.test(profileUrl)) {
 							html += '<div><a href="' + escapeHtml(profileUrl) + '" target="_blank" rel="noopener noreferrer">Ver perfil</a></div>';
 						}
@@ -12106,10 +12108,10 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							pin.setAttribute('transform', `translate(${x},${y})`);
 							pin.setAttribute('tabindex', '0');
 							pin.setAttribute('role', 'button');
-							pin.setAttribute('aria-label', [markerName || 'ONG', markerLocation || '', 'Status ' + markerStatus].filter(Boolean).join(', '));
+							pin.setAttribute('aria-label', [markerName || 'ONG', markerLocation || '', canViewAdimplenciaStatus ? ('Status ' + markerStatus) : ''].filter(Boolean).join(', '));
 							pin.setAttribute('data-name', markerName);
 							pin.setAttribute('data-location', markerLocation);
-							pin.setAttribute('data-status', markerStatus.charAt(0).toUpperCase() + markerStatus.slice(1));
+							pin.setAttribute('data-status', canViewAdimplenciaStatus ? (markerStatus.charAt(0).toUpperCase() + markerStatus.slice(1)) : '');
 							pin.setAttribute('data-profile-url', markerProfileUrl);
 
 							const body = document.createElementNS(ns, 'path');
