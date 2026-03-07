@@ -11448,7 +11448,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		$states = array('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO');
 
 		$initial_params = rma_map_normalize_request_params(array(
-			'page' => isset($_GET['page']) ? wp_unslash($_GET['page']) : 1,
+			'page' => isset($_GET['rma_page']) ? wp_unslash($_GET['rma_page']) : 1,
 			'per_page' => $per_page,
 			'search' => isset($_GET['search']) ? wp_unslash($_GET['search']) : '',
 			'state' => isset($_GET['state']) ? wp_unslash($_GET['state']) : '',
@@ -11532,8 +11532,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 		</style>
 			<div class="rma-map-directory" data-endpoint="<?php echo esc_url($endpoint); ?>" data-per-page="<?php echo esc_attr($per_page); ?>">
 				<div class="rma-map-intro">
-					<h3><?php echo esc_html__('Mapa de ONGs da Rede', 'exertio_theme'); ?></h3>
-					<p><?php echo esc_html__('Consulte organizações por estado, cidade e situação de adimplência. Os resultados abaixo são atualizados em tempo real a partir do diretório interno da plataforma.', 'exertio_theme'); ?></p>
+					<h3><?php echo esc_html__('Diretório Geográfico de ONGs', 'exertio_theme'); ?></h3>
+					<p><?php echo esc_html__('Consulta pública do diretório geográfico de organizações, com filtros por estado e cidade para facilitar a localização das entidades cadastradas.', 'exertio_theme'); ?></p>
 				</div>
 				<div class="rma-map-kpis" aria-live="polite">
 					<div class="rma-map-kpi"><b data-rma-kpi="total"><?php echo esc_html($initial_total); ?></b><span><?php echo esc_html__('ONGs no diretório', 'exertio_theme'); ?></span></div>
@@ -11669,7 +11669,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						}
 					}
 
-					const queryPage = parseInt(query.get('page') || '1', 10);
+					const queryPage = parseInt(query.get('rma_page') || '1', 10);
 					if (Number.isFinite(queryPage) && queryPage > 0) {
 						currentPage = Math.min(queryPage, 9999);
 					}
@@ -11809,10 +11809,14 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					}
 					const paramsString = params.toString();
 					if (window.history && window.history.replaceState) {
-						const managedKeys = ['page', 'per_page', 'search', 'state', 'city', 'adimplencia'];
+						const managedKeys = ['rma_page', 'per_page', 'search', 'state', 'city', 'adimplencia'];
 						const mergedParams = new URLSearchParams(window.location.search || '');
 						managedKeys.forEach((key) => mergedParams.delete(key));
 						for (const [key, value] of params.entries()) {
+							if (key === 'page') {
+								mergedParams.set('rma_page', value);
+								continue;
+							}
 							mergedParams.set(key, value);
 						}
 						const qs = mergedParams.toString();
