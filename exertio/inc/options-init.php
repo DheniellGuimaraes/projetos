@@ -11953,64 +11953,18 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					}
 
 					const knownUf = new Set(['ac','al','ap','am','ba','ce','df','es','go','ma','mt','ms','mg','pa','pb','pr','pe','pi','rj','rn','rs','ro','rr','sc','sp','se','to']);
-					const statePinCoordinates = {
-						AC:{px:0.20,py:0.45}, AL:{px:0.86,py:0.52}, AP:{px:0.78,py:0.23}, AM:{px:0.42,py:0.35}, BA:{px:0.82,py:0.52},
-						CE:{px:0.90,py:0.42}, DF:{px:0.70,py:0.56}, ES:{px:0.85,py:0.65}, GO:{px:0.65,py:0.55}, MA:{px:0.85,py:0.38},
-						MT:{px:0.55,py:0.50}, MS:{px:0.60,py:0.65}, MG:{px:0.57,py:0.63}, PA:{px:0.72,py:0.34}, PB:{px:0.94,py:0.46},
-						PR:{px:0.58,py:0.77}, PE:{px:0.91,py:0.47}, PI:{px:0.83,py:0.44}, RJ:{px:0.66,py:0.67}, RN:{px:0.96,py:0.43},
-						RS:{px:0.58,py:0.88}, RO:{px:0.35,py:0.52}, RR:{px:0.52,py:0.20}, SC:{px:0.76,py:0.77}, SP:{px:0.60,py:0.70},
-						SE:{px:0.88,py:0.52}, TO:{px:0.72,py:0.45}
-					};
-
-					function normalizePinRatio(coord){
-						if (!coord || typeof coord !== 'object') return null;
-						const normalizeValue = (value) => {
-							const numeric = Number(value);
-							if (!Number.isFinite(numeric)) return null;
-							if (numeric >= 0 && numeric <= 1) return numeric;
-							if (numeric > 1 && numeric <= 100) return numeric / 100;
-							return null;
-						};
-						const px = normalizeValue(coord.px);
-						const py = normalizeValue(coord.py);
-						if (px === null || py === null) return null;
-						return { px, py };
-					}
-					let mapDimensions = { minX: 0, minY: 0, width: 460, height: 465 };
-
-					function detectMapDimensions(){
-						if (!mapSvg) return;
-						const nativeViewBox = mapSvg.viewBox && mapSvg.viewBox.baseVal ? mapSvg.viewBox.baseVal : null;
-						if (nativeViewBox && Number.isFinite(Number(nativeViewBox.width)) && Number(nativeViewBox.width) > 0 && Number.isFinite(Number(nativeViewBox.height)) && Number(nativeViewBox.height) > 0) {
-							mapDimensions = {
-								minX: Number.isFinite(Number(nativeViewBox.x)) ? Number(nativeViewBox.x) : 0,
-								minY: Number.isFinite(Number(nativeViewBox.y)) ? Number(nativeViewBox.y) : 0,
-								width: Number(nativeViewBox.width),
-								height: Number(nativeViewBox.height)
-							};
-							return;
-						}
-						const viewBox = String(mapSvg.getAttribute('viewBox') || '').trim().split(/\s+/);
-						if (viewBox.length === 4) {
-							const width = Number(viewBox[2]);
-							const height = Number(viewBox[3]);
-							if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
-								const minX = Number(viewBox[0]);
-								const minY = Number(viewBox[1]);
-								mapDimensions = {
-									minX: Number.isFinite(minX) ? minX : 0,
-									minY: Number.isFinite(minY) ? minY : 0,
-									width,
-									height
-								};
-								return;
-							}
-						}
-						const attrWidth = Number(mapSvg.getAttribute('width'));
-						const attrHeight = Number(mapSvg.getAttribute('height'));
-						if (Number.isFinite(attrWidth) && attrWidth > 0 && Number.isFinite(attrHeight) && attrHeight > 0) {
-							mapDimensions = { minX: 0, minY: 0, width: attrWidth, height: attrHeight };
-						}
+					function getStateCentroidFromSvg(state){
+						if (!mapSvg) return null;
+						const normalizedState = String(state || '').trim().toLowerCase();
+						if (!knownUf.has(normalizedState)) return null;
+						const stateNode = mapSvg.querySelector('#state_' + normalizedState);
+						if (!stateNode || typeof stateNode.getBBox !== 'function') return null;
+						const bbox = stateNode.getBBox();
+						if (!bbox || !Number.isFinite(Number(bbox.width)) || !Number.isFinite(Number(bbox.height))) return null;
+						const x = Number(bbox.x) + (Number(bbox.width) / 2);
+						const y = Number(bbox.y) + (Number(bbox.height) / 2);
+						if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+						return [x, y];
 					}
 
 					function annotateSvgStates(){
@@ -12061,39 +12015,11 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					}
 
 					ensureMapGradients();
-					detectMapDimensions();
 					annotateSvgStates();
 
 					function getFixedStatePinCoords(state){
-						const normalizedState = String(state || '').trim().toUpperCase();
-						const coord = normalizePinRatio(statePinCoordinates[normalizedState]);
-						if (!coord) return null;
-						const px = Number(coord.px);
-						const py = Number(coord.py);
-						if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
-						if (px < 0 || px > 1 || py < 0 || py > 1) return null;
-						const svg = document.querySelector('#map') || mapSvg;
-						const vb = svg && svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
-						let x = vb ? (vb.x + (vb.width * px)) : (mapDimensions.minX + (mapDimensions.width * px));
-						let y = vb ? (vb.y + (vb.height * py)) : (mapDimensions.minY + (mapDimensions.height * py));
-						// Temporary fallback to keep markers visible while coordinate normalization is stabilized.
-						if (vb && (x > (vb.width * 2) || y > (vb.height * 2))) {
-							x = x / 10;
-							y = y / 10;
-						}
-						if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-						const minX = vb ? vb.x : mapDimensions.minX;
-						const minY = vb ? vb.y : mapDimensions.minY;
-						const width = vb ? vb.width : mapDimensions.width;
-						const height = vb ? vb.height : mapDimensions.height;
-						if (x < minX || x > (minX + width) || y < minY || y > (minY + height)) {
-							return null;
-						}
-					return [
-						x,
-						y
-					];
-				}
+						return getStateCentroidFromSvg(state);
+					}
 
 
 				function resolveMapMarkers(apiResponse){
