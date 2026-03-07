@@ -11584,12 +11584,19 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				</div>
 				<div class="rma-map-pagination"></div>
 			</div>
-			<script>
-			(function(){
-				const root = document.currentScript.previousElementSibling;
-				if (!root) return;
-				const endpoint = root.dataset.endpoint;
-				if (!endpoint) return;
+				<script>
+				(function(){
+					const rmaMapScriptTag = document.currentScript;
+
+					function initRmaMap(){
+						const root = rmaMapScriptTag ? rmaMapScriptTag.previousElementSibling : null;
+						if (root && root.getAttribute('data-rma-map-initialized') === '1') return;
+						if (root) {
+							root.setAttribute('data-rma-map-initialized', '1');
+						}
+					if (!root) return;
+					const endpoint = root.dataset.endpoint;
+					if (!endpoint) return;
 				const parsedPerPage = parseInt(root.dataset.perPage || '12', 10);
 				const perPage = Number.isFinite(parsedPerPage) && parsedPerPage > 0 ? Math.min(parsedPerPage, 100) : 12;
 				const filtersForm = root.querySelector('.rma-map-filters');
@@ -12132,31 +12139,42 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							const markerLocation = markerCity && markerState ? (markerCity + ' - ' + markerState) : (markerCity || markerState);
 							const markerStatus = String((marker && marker.adimplencia) || 'adimplente').trim();
 							const markerProfileUrl = String((marker && marker.profileUrl) || '').trim();
-							const pin = document.createElementNS(ns, 'circle');
-							pin.setAttribute('transform', `translate(${x}, ${y})`);
-							pin.setAttribute('cx', '0');
-							pin.setAttribute('cy', '0');
-							pin.setAttribute('r', '6');
-							pin.setAttribute('fill', '#ff3b30');
-							pin.setAttribute('class', 'rma-map-pin');
-							pin.setAttribute('tabindex', '0');
-							pin.setAttribute('role', 'button');
-							pin.setAttribute('aria-label', [markerName || 'ONG', markerLocation || '', 'Status ' + markerStatus].filter(Boolean).join(', '));
-							pin.setAttribute('data-name', markerName);
-							pin.setAttribute('data-location', markerLocation);
-							pin.setAttribute('data-status', markerStatus.charAt(0).toUpperCase() + markerStatus.slice(1));
-							pin.setAttribute('data-profile-url', markerProfileUrl);
+							const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+							circle.setAttribute('r', '6');
+							circle.setAttribute('class', 'rma-map-pin');
+							circle.setAttribute('fill', '#ff3b30');
+							circle.setAttribute('transform', `translate(${x},${y})`);
+							circle.setAttribute('cx', '0');
+							circle.setAttribute('cy', '0');
+							circle.setAttribute('tabindex', '0');
+							circle.setAttribute('role', 'button');
+							circle.setAttribute('aria-label', [markerName || 'ONG', markerLocation || '', 'Status ' + markerStatus].filter(Boolean).join(', '));
+							circle.setAttribute('data-name', markerName);
+							circle.setAttribute('data-location', markerLocation);
+							circle.setAttribute('data-status', markerStatus.charAt(0).toUpperCase() + markerStatus.slice(1));
+							circle.setAttribute('data-profile-url', markerProfileUrl);
 							const title = document.createElementNS(ns, 'title');
 							title.textContent = markerLocation ? `${markerName}\n${markerLocation}` : markerName;
-							pin.appendChild(title);
-							pin.addEventListener('mouseenter', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
-							pin.addEventListener('mousemove', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
-							pin.addEventListener('mouseleave', hidePinTooltip);
-							pin.addEventListener('focus', () => showPinTooltip(pin));
-							pin.addEventListener('blur', hidePinTooltip);
-							group.appendChild(pin);
+							circle.appendChild(title);
+							circle.addEventListener('mouseenter', (ev) => showPinTooltip(circle, ev.clientX, ev.clientY));
+							circle.addEventListener('mousemove', (ev) => showPinTooltip(circle, ev.clientX, ev.clientY));
+							circle.addEventListener('mouseleave', hidePinTooltip);
+							circle.addEventListener('focus', () => showPinTooltip(circle));
+							circle.addEventListener('blur', hidePinTooltip);
+							const pinsLayer = document.querySelector('#rma-map-pins');
+							if (pinsLayer) {
+								pinsLayer.appendChild(circle);
+							} else {
+								group.appendChild(circle);
+							}
 						});
-						mapSvg.appendChild(group);
+						const svg = document.querySelector('#map');
+						const pins = document.querySelector('#rma-map-pins');
+						if (svg && pins) {
+							svg.appendChild(pins);
+						} else {
+							mapSvg.appendChild(group);
+						}
 						updateMapStateHighlights(markers);
 					}
 
@@ -12238,8 +12256,8 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					clearTimeout(searchDebounce);
 				});
 
-				renderMapPins(resolveMapMarkers({ data: { map_markers: initialMapMarkers } }));
-				syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
+					renderMapPins(resolveMapMarkers({ data: { map_markers: initialMapMarkers } }));
+					syncMapActiveState((stateFilter && stateFilter.value) ? stateFilter.value : '');
 				if (searchInput && normalizeFilterText(searchInput.value || '', 120)) {
 					renderSummary(<?php echo wp_json_encode($initial_pagination); ?>, <?php echo wp_json_encode($initial_status_count); ?>);
 					renderStates(<?php echo wp_json_encode($initial_states_count); ?>, (stateFilter && stateFilter.value) ? stateFilter.value : '');
@@ -12251,8 +12269,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					renderPagination(null);
 					renderStates({}, (stateFilter && stateFilter.value) ? stateFilter.value : '');
 				}
-			})();
-			</script>
+					}
+
+					if (document.readyState === 'loading') {
+						document.addEventListener('DOMContentLoaded', initRmaMap);
+					} else {
+						initRmaMap();
+					}
+				})();
+				</script>
 		<?php
 		return ob_get_clean();
 	}
