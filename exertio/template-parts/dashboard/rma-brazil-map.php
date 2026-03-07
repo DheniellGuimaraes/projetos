@@ -76,7 +76,7 @@ $svg_markup = '';
 		height:auto;
 		margin:0 auto;
 		display:block;
-		background:transparent;
+		background:url("/exertio/images/mapa.svg") center center / contain no-repeat;
 		border-radius:12px;
 		padding:2px;
 		shape-rendering:geometricPrecision;
