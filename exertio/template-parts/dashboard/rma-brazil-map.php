@@ -140,3 +140,14 @@ if (file_exists($svg_file_path) && is_readable($svg_file_path)) {
 		</svg>
 	<?php endif; ?>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+	if (window.rmaMapInitialized) {
+		return;
+	}
+	window.rmaMapInitialized = true;
+	if (typeof window.initRmaMap === 'function') {
+		window.initRmaMap();
+	}
+});
+</script>

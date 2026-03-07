@@ -12271,10 +12271,22 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				}
 					}
 
+					window.initRmaMap = initRmaMap;
+
+					function runInitOnce(){
+						if (window.rmaMapInitialized) {
+							return;
+						}
+						window.rmaMapInitialized = true;
+						if (typeof window.initRmaMap === 'function') {
+							window.initRmaMap();
+						}
+					}
+
 					if (document.readyState === 'loading') {
-						document.addEventListener('DOMContentLoaded', initRmaMap);
+						document.addEventListener('DOMContentLoaded', runInitOnce);
 					} else {
-						initRmaMap();
+						runInitOnce();
 					}
 				})();
 				</script>
