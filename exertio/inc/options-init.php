@@ -11969,6 +11969,16 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 					function annotateSvgStates(){
 						if (!mapSvg) return;
+						mapSvg.querySelectorAll('path[id]').forEach((node) => {
+							const rawId = String(node.getAttribute('id') || '').trim();
+							if (!rawId) return;
+							const normalizedId = rawId.toLowerCase();
+							if (normalizedId.startsWith('state_')) return;
+							if (!knownUf.has(normalizedId)) return;
+							node.setAttribute('data-state', normalizedId);
+							node.setAttribute('id', 'state_' + normalizedId);
+						});
+
 						mapSvg.querySelectorAll('[id]').forEach((node) => {
 							const rawId = String(node.getAttribute('id') || '').trim();
 							if (!rawId) return;
