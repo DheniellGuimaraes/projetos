@@ -11160,10 +11160,13 @@ if (!function_exists('rma_map_fetch_entities')) {
 		$per_page = $normalized['per_page'];
 		$normalized_city_filter = rma_map_normalize_search_text($city);
 		$requires_search = (trim($search) === '');
-		$cache_key = 'rma_map_entities_v10_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
-		$cached_response = get_transient($cache_key);
-		if ($cached_response !== false) {
-			return $cached_response;
+		$cache_key = 'rma_map_entities_v11_' . rma_map_get_cache_version() . '_' . md5(wp_json_encode(array($state, $city, $search, $adimplencia, $page, $per_page)));
+		$cache_allowed = ($search === '');
+		if ($cache_allowed) {
+			$cached_response = get_transient($cache_key);
+			if ($cached_response !== false) {
+				return $cached_response;
+			}
 		}
 
 		$entities = array();
@@ -11325,7 +11328,9 @@ if (!function_exists('rma_map_fetch_entities')) {
 			),
 		);
 
-		set_transient($cache_key, $response, 5 * MINUTE_IN_SECONDS);
+		if ($cache_allowed) {
+			set_transient($cache_key, $response, 5 * MINUTE_IN_SECONDS);
+		}
 		return $response;
 	}
 }
