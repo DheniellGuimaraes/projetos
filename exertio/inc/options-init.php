@@ -11522,8 +11522,10 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						.rma-map-pin{pointer-events:auto;cursor:pointer;transition:filter .14s ease,opacity .14s ease}
 						.rma-map-pin:hover,.rma-map-pin:focus{filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}
 						.rma-map-pin:focus{outline:none}
-						#rma-map-tooltip{position:absolute;z-index:30;pointer-events:none;max-width:260px;padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.92);color:#fff;font-size:12px;line-height:1.35;box-shadow:0 10px 24px rgba(2,6,23,.22);opacity:0;transform:translate(-50%,-110%);transition:opacity .15s ease}
-						#rma-map-tooltip a{color:#93c5fd;text-decoration:underline;pointer-events:auto}
+						#rma-map-tooltip{position:absolute;z-index:30;pointer-events:auto;max-width:280px;padding:10px 12px;border-radius:12px;background:rgba(15,23,42,.94);color:#fff;font-size:12px;line-height:1.35;box-shadow:0 10px 24px rgba(2,6,23,.22);opacity:0;transform:translate(-50%,-110%);transition:opacity .15s ease}
+						#rma-map-tooltip a{pointer-events:auto}
+							#rma-map-tooltip .rma-map-tooltip-link{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 10px;border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff !important;font-weight:700;text-decoration:none;box-shadow:0 4px 10px rgba(22,163,74,.35)}
+							#rma-map-tooltip .rma-map-tooltip-link:hover{filter:brightness(1.05);transform:translateY(-1px)}
 					#rma-map-tooltip.is-visible{opacity:1}
 				.rma-map-brazil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:8px;margin-top:8px}
 				.rma-map-brazil-grid button{border:1px solid rgba(52,211,153,.55);border-radius:10px;background:rgba(255,255,255,.82);color:#166534;font-size:12px;font-weight:700;height:34px}
@@ -11904,6 +11906,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					const mapSvg = root.querySelector('.box-mapa svg#map, .box-mapa svg');
 					const mapPanel = root.querySelector('.rma-map-brazil');
 					let pinTooltip = null;
+					let pinTooltipHideTimer = null;
 
 					function ensurePinTooltip(){
 						if (!mapPanel) return null;
@@ -11914,6 +11917,15 @@ if (!function_exists('rma_map_directory_shortcode')) {
 							pinTooltip.id = 'rma-map-tooltip';
 							mapPanel.appendChild(pinTooltip);
 						}
+						if (!pinTooltip.dataset.bound) {
+							pinTooltip.addEventListener('mouseenter', () => {
+								if (pinTooltipHideTimer) clearTimeout(pinTooltipHideTimer);
+							});
+							pinTooltip.addEventListener('mouseleave', () => {
+								scheduleHidePinTooltip();
+							});
+							pinTooltip.dataset.bound = '1';
+						}
 						return pinTooltip;
 					}
 
@@ -11921,9 +11933,18 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						return String(value || '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char] || char));
 					}
 
+					function scheduleHidePinTooltip(){
+						if (pinTooltipHideTimer) clearTimeout(pinTooltipHideTimer);
+						pinTooltipHideTimer = setTimeout(() => hidePinTooltip(), 220);
+					}
+
 					function hidePinTooltip(){
 						const el = ensurePinTooltip();
 						if (!el) return;
+						if (pinTooltipHideTimer) {
+							clearTimeout(pinTooltipHideTimer);
+							pinTooltipHideTimer = null;
+						}
 						el.classList.remove('is-visible');
 						el.setAttribute('aria-hidden', 'true');
 					}
@@ -11931,6 +11952,10 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					function showPinTooltip(pin, clientX, clientY){
 						const el = ensurePinTooltip();
 						if (!el || !pin || !mapPanel) return;
+						if (pinTooltipHideTimer) {
+							clearTimeout(pinTooltipHideTimer);
+							pinTooltipHideTimer = null;
+						}
 						const name = String(pin.getAttribute('data-name') || '').trim();
 						const location = String(pin.getAttribute('data-location') || '').trim();
 						const status = String(pin.getAttribute('data-status') || '').trim();
@@ -11939,7 +11964,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (location) html += '<div>' + escapeHtml(location) + '</div>';
 						if (canViewAdimplenciaStatus && status) html += '<div>Status: ' + escapeHtml(status) + '</div>';
 						if (profileUrl && /^https?:\/\//i.test(profileUrl)) {
-							html += '<div><a href="' + escapeHtml(profileUrl) + '" target="_blank" rel="noopener noreferrer">Ver perfil</a></div>';
+							html += '<div><a class="rma-map-tooltip-link" href="' + escapeHtml(profileUrl) + '" target="_blank" rel="noopener noreferrer">Ver perfil ↗</a></div>';
 						}
 						el.innerHTML = html;
 						const rect = mapPanel.getBoundingClientRect();
@@ -12135,9 +12160,20 @@ if (!function_exists('rma_map_directory_shortcode')) {
 
 							pin.addEventListener('mouseenter', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
 							pin.addEventListener('mousemove', (ev) => showPinTooltip(pin, ev.clientX, ev.clientY));
-							pin.addEventListener('mouseleave', hidePinTooltip);
+							pin.addEventListener('mouseleave', scheduleHidePinTooltip);
 							pin.addEventListener('focus', () => showPinTooltip(pin));
-							pin.addEventListener('blur', hidePinTooltip);
+							pin.addEventListener('blur', scheduleHidePinTooltip);
+							pin.addEventListener('click', () => {
+								if (/^https?:\/\//i.test(markerProfileUrl)) {
+									window.open(markerProfileUrl, '_blank', 'noopener');
+								}
+							});
+							pin.addEventListener('keydown', (ev) => {
+								if ((ev.key === 'Enter' || ev.key === ' ') && /^https?:\/\//i.test(markerProfileUrl)) {
+									ev.preventDefault();
+									window.open(markerProfileUrl, '_blank', 'noopener');
+								}
+							});
 							const pinsLayer = document.querySelector('#rma-map-pins');
 							if (pinsLayer) {
 								pinsLayer.appendChild(pin);
