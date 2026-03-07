@@ -86,6 +86,7 @@ $map_background_url = function_exists('get_template_directory_uri')
 		text-rendering:optimizeLegibility;
 	}
 	#map .state path{
+		fill:transparent !important;
 		stroke:none;
 		transition:all .2s ease;
 		filter:none;
@@ -94,15 +95,12 @@ $map_background_url = function_exists('get_template_directory_uri')
 		shape-rendering:geometricPrecision;
 		vector-effect:non-scaling-stroke;
 	}
-	#map .state[data-region="1"] path{fill:#0a8d3f;}
-	#map .state[data-region="2"] path{fill:#07b35a;}
-	#map .state[data-region="3"] path{fill:#00a94e;}
-	#map .state[data-region="4"] path{fill:#8dc52f;}
-	#map .state[data-region="5"] path{fill:#098347;}
-	#map .state.has-ong path{fill:#9deec4 !important;}
+	#map .state.has-ong path{
+		fill:rgba(157, 238, 196, 0.22) !important;
+	}
 	#map .state:hover path,
 	#map .state.is-active path{
-		fill:#d6f2df !important;
+		fill:rgba(214, 242, 223, 0.28) !important;
 		stroke:none;
 		transform:translateY(-1px);
 	}
