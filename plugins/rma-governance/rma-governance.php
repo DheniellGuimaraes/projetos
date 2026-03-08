@@ -1618,6 +1618,14 @@ final class RMA_Governance {
             'rma-governanca-upload' => '[rma_governanca_entidade_upload]',
         ];
 
+        if (shortcode_exists('rma_financeiro_entidade_crm')) {
+            $map['rma-financeiro-visao-geral'] = '[rma_financeiro_entidade_crm tab="visao-geral"]';
+            $map['rma-financeiro-cobranca'] = '[rma_financeiro_entidade_crm tab="cobranca"]';
+            $map['rma-financeiro-pix'] = '[rma_financeiro_entidade_crm tab="pix"]';
+            $map['rma-financeiro-historico'] = '[rma_financeiro_entidade_crm tab="historico"]';
+            $map['rma-financeiro-relatorios'] = '[rma_financeiro_entidade_crm tab="relatorios"]';
+        }
+
         if (! isset($map[$ext])) {
             return;
         }
