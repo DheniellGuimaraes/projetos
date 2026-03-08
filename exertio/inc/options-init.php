@@ -11592,7 +11592,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					<?php elseif (!empty($initial_items)) : ?>
 						<?php foreach ($initial_items as $initial_item) : ?>
 							<?php $initial_city_state = trim(((string) ($initial_item['city'] ?? '')) . ((string) ($initial_item['state'] ?? '') !== '' ? '/' . (string) ($initial_item['state'] ?? '') : ''), '/'); ?>
-							<article class="rma-item">
+							<article class="rma-item" style="border-radius:40px;padding:25px;">
 								<h4><?php echo esc_html((string) ($initial_item['name'] ?? '')); ?></h4>
 								<p><?php echo esc_html($initial_city_state); ?></p>
 								<p><?php echo esc_html((string) ($initial_item['address'] ?? '')); ?></p>
@@ -11761,7 +11761,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const safeCity = escapeHtml(location || '');
 						const safeAddress = escapeHtml(item.address || '');
 						const safeProfileUrl = escapeHtml(normalizeProfileUrl(item.profile_url));
-						return `<article class="rma-item"><h4>${safeName}</h4><p>${safeCity}</p><p>${safeAddress}</p><a href="${safeProfileUrl}" target="_blank" rel="noopener noreferrer"><?php echo esc_js(__('Ver perfil', 'exertio_theme')); ?></a></article>`;
+						return `<article class="rma-item" style="border-radius:40px;padding:25px;"><h4>${safeName}</h4><p>${safeCity}</p><p>${safeAddress}</p><a href="${safeProfileUrl}" target="_blank" rel="noopener noreferrer"><?php echo esc_js(__('Ver perfil', 'exertio_theme')); ?></a></article>`;
 					}).join('');
 				}
 				function renderPagination(meta){
