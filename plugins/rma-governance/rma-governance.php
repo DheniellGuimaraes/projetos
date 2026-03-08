@@ -1337,6 +1337,7 @@ final class RMA_Governance {
         echo '<input type="hidden" name="rma_entity_upload_action" value="1" />';
         echo '<p><label>Tipo do documento</label><br/><input type="text" name="document_type" placeholder="ex.: estatuto, ata, comprovante" style="width:100%;max-width:480px;border:1px solid rgba(15,23,42,.2);border-radius:10px;padding:8px 10px"></p>';
         echo '<p><label>Arquivo</label><br/><input type="file" name="entity_document_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required></p>';
+        echo '<p><label style="display:inline-flex;align-items:center;gap:8px;"><input type="checkbox" name="document_public" value="1" /> Permitir exibição pública deste documento no perfil da entidade</label></p>';
         echo '<p><button type="submit" style="border:none;border-radius:10px;padding:10px 14px;background:linear-gradient(135deg,#7bad39,#5ddabb);color:#fff;cursor:pointer">Enviar documento</button></p>';
         echo '</form></div>';
         return (string) ob_get_clean();
@@ -1394,6 +1395,7 @@ final class RMA_Governance {
             'uploaded_by' => get_current_user_id(),
             'mime_type' => sanitize_text_field((string) ($file['type'] ?? '')),
             'size' => (int) ($file['size'] ?? 0),
+            'is_public' => isset($_POST['document_public']) ? '1' : '0',
         ];
 
         update_post_meta($entity_id, 'entity_documents', $docs);
@@ -1737,6 +1739,10 @@ final class RMA_Governance {
         }
 
         update_post_meta($entity_id, 'governance_audit_logs', $logs);
+
+        if (function_exists('rma_append_entity_audit_event')) {
+            rma_append_entity_audit_event($entity_id, 'governance', $action, 'info', 'Evento de governança registrado.', $data);
+        }
     }
 }
 

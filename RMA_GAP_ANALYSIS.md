@@ -3,30 +3,33 @@
 This document captures the current state of the delivered package against the requested RMA organogram, based on static audit of:
 
 - `exertio/inc/options-init.php`
-- packaged plugins in `plugins.zip`
-- packaged UI snippets in `ui.zip`
+- plugins in `plugins/`
+- map UI in `exertio/template-parts/dashboard/rma-brazil-map.php`
 
 ## Implemented (high confidence)
 
-- Public directory with filters for state, city, name search, and adimplência status.
+- Public directory with filters for state, city, name search, adimplência and **Área de Interesse**.
 - Public REST route feeding directory/list/map data.
 - Interactive Brazil map and entity links.
-- WooCommerce + PIX payment flow foundations (settings/sync modules in plugin package).
-- Initial automation and analytics modules in plugin package.
+- Public entity profile shortcode with institutional overview, public document policy/list, and location block.
+- Governance workflow with operational transitions, logs and entity upload area.
+- WooCommerce + PIX payment flow foundations with annual due generation.
+- Finance CRM dashboards/reports with state/area/active-inactive/revenue/history.
+- Daily automation module for annual-cycle reminders and status actions.
+- Centralized cross-plugin audit timeline (`rma_audit_timeline`) for governance/finance/automation events.
 
-## Partial / Missing
+## Partial / Remaining for 100%
 
-- Public filter by **Área de Interesse**.
-- Fully structured public entity page (institutional profile + public docs policy + map block).
-- Complete restricted entity area (status dashboard, document pendencies, notifications center).
-- Formal 3-step approval workflow with explicit transitions and audit trail.
-- Complete admin reporting suite (state, area, active/inactive, annual revenue, history).
-- Strong observability/audit layer for critical actions and automation retries.
+- Formalized multi-stage governance with role-based approval matrix (explicit stage actor constraints).
+- Full observability panel (admin UI) for cross-plugin timeline filtering/export/retry insights.
+- Deeper public profile completeness (media/gallery, richer compliance cards, public KPIs).
+- Advanced analytics package (trend dashboards/charts) beyond tabular reporting.
+- Gradual modularization of large theme file (`options-init.php`) into domain-focused modules/plugins.
 
 ## Suggested Delivery Order
 
-1. Close public/restricted core gaps (area filter + structured entity profile + restricted dashboard).
-2. Formalize governance workflow (3 approvals, permissioned transitions).
-3. Expand admin reporting package.
-4. Harden automation observability and compliance audit trail.
-
+1. Enforce role-based stage transitions in governance.
+2. Add admin observability console for unified timeline.
+3. Extend public profile blocks and premium visual polish.
+4. Add advanced analytics views.
+5. Refactor/segment domain logic for maintainability.

@@ -205,6 +205,7 @@ final class RMA_Finance_CRM {
 
         $entity = $this->build_entity_finance_row($entity_id);
         $history = $this->get_entity_history_rows($entity_id);
+        $audit_rows = $this->get_entity_audit_rows($entity_id);
 
         ob_start();
         echo '<div class="rma-fin-shell">';
@@ -226,9 +227,32 @@ final class RMA_Finance_CRM {
         ]);
 
         echo $this->build_table('Histórico da sua entidade', $history, ['Status', 'Valor', 'Ano', 'Pedido', 'Data']);
+        echo $this->build_table('Linha do tempo operacional', $audit_rows, ['Data', 'Origem', 'Evento', 'Severidade', 'Mensagem']);
         echo '</div>';
 
         return (string) ob_get_clean();
+    }
+
+    private function get_entity_audit_rows(int $entity_id): array {
+        $events = get_post_meta($entity_id, 'rma_audit_timeline', true);
+        $events = is_array($events) ? array_reverse($events) : [];
+        $rows = [];
+
+        foreach (array_slice($events, 0, 20) as $event) {
+            $rows[] = [
+                (string) ($event['datetime'] ?? '—'),
+                strtoupper((string) ($event['source'] ?? 'sistema')),
+                (string) ($event['event'] ?? 'evento'),
+                $this->format_status_badge((string) ($event['severity'] ?? 'info'), strtoupper((string) ($event['severity'] ?? 'info'))),
+                (string) ($event['message'] ?? '—'),
+            ];
+        }
+
+        if (empty($rows)) {
+            $rows[] = ['—', 'SISTEMA', 'sem_eventos', $this->format_status_badge('info', 'INFO'), 'Ainda não existem eventos operacionais consolidados.'];
+        }
+
+        return $rows;
     }
 
     private function get_admin_financial_data(): array {

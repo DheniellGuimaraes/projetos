@@ -12438,3 +12438,164 @@ if (!function_exists('rma_map_render_admin_page')) {
 		<?php
 	}
 }
+
+
+if (!function_exists('rma_append_entity_audit_event')) {
+	function rma_append_entity_audit_event($entity_id, $source, $event, $severity = 'info', $message = '', $context = array())
+	{
+		$entity_id = absint($entity_id);
+		if ($entity_id <= 0 || get_post_type($entity_id) !== 'rma_entidade') {
+			return false;
+		}
+
+		$allowed_severities = array('info', 'success', 'warning', 'error');
+		$severity = in_array((string) $severity, $allowed_severities, true) ? (string) $severity : 'info';
+		$source = sanitize_key((string) $source);
+		$event = sanitize_key((string) $event);
+		$message = sanitize_text_field((string) $message);
+		$context = is_array($context) ? $context : array();
+
+		$timeline = get_post_meta($entity_id, 'rma_audit_timeline', true);
+		$timeline = is_array($timeline) ? $timeline : array();
+
+		$timeline[] = array(
+			'id' => function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : uniqid('rma_', true),
+			'datetime' => current_time('mysql', true),
+			'source' => $source,
+			'event' => $event,
+			'severity' => $severity,
+			'message' => $message,
+			'context' => array_map('wp_strip_all_tags', $context),
+		);
+
+		$max = 400;
+		if (count($timeline) > $max) {
+			$timeline = array_slice($timeline, -1 * $max);
+		}
+
+		update_post_meta($entity_id, 'rma_audit_timeline', $timeline);
+		return true;
+	}
+}
+
+if (!function_exists('rma_get_entity_public_documents')) {
+	function rma_get_entity_public_documents($entity_id)
+	{
+		$entity_id = absint($entity_id);
+		if ($entity_id <= 0 || get_post_type($entity_id) !== 'rma_entidade') {
+			return array();
+		}
+
+		$docs = get_post_meta($entity_id, 'entity_documents', true);
+		$docs = is_array($docs) ? $docs : array();
+		$public_docs = array();
+
+		foreach ($docs as $doc) {
+			$is_public = isset($doc['is_public']) && (string) $doc['is_public'] === '1';
+			if (!$is_public) {
+				continue;
+			}
+
+			$name = isset($doc['name']) ? sanitize_text_field((string) $doc['name']) : '';
+			$uploaded_at = isset($doc['uploaded_at']) ? sanitize_text_field((string) $doc['uploaded_at']) : '';
+			$path = isset($doc['path']) ? (string) $doc['path'] : '';
+			$url = '';
+			if ($path !== '' && function_exists('wp_upload_dir')) {
+				$upload_dir = wp_upload_dir();
+				$base_dir = isset($upload_dir['basedir']) ? (string) $upload_dir['basedir'] : '';
+				$base_url = isset($upload_dir['baseurl']) ? (string) $upload_dir['baseurl'] : '';
+				if ($base_dir !== '' && $base_url !== '' && strpos($path, $base_dir) === 0) {
+					$relative = ltrim(str_replace($base_dir, '', $path), '/');
+					$url = esc_url_raw(trailingslashit($base_url) . $relative);
+				}
+			}
+
+			$public_docs[] = array(
+				'name' => $name !== '' ? $name : __('Documento', 'exertio_theme'),
+				'uploaded_at' => $uploaded_at,
+				'url' => $url,
+			);
+		}
+
+		return $public_docs;
+	}
+}
+
+if (!function_exists('rma_public_entity_profile_shortcode')) {
+	function rma_public_entity_profile_shortcode($atts = array())
+	{
+		$atts = shortcode_atts(array(
+			'id' => 0,
+		), $atts, 'rma_public_entity_profile');
+
+		$entity_id = absint($atts['id']);
+		if ($entity_id <= 0 && isset($_GET['entity_id'])) {
+			$entity_id = absint(wp_unslash($_GET['entity_id']));
+		}
+
+		if ($entity_id <= 0 || get_post_type($entity_id) !== 'rma_entidade') {
+			return '<p>' . esc_html__('Entidade pública não encontrada.', 'exertio_theme') . '</p>';
+		}
+
+		$entity_name = get_the_title($entity_id);
+		$city = (string) rma_map_meta_value($entity_id, array('cidade', '_employer_city', '_city'));
+		$uf = strtoupper((string) rma_map_meta_value($entity_id, array('uf', 'estado', '_employer_state', '_state', '_employer_estado')));
+		$area = rma_map_entity_area_label($entity_id);
+		$governance_status = (string) get_post_meta($entity_id, 'governance_status', true);
+		$finance_status = (string) get_post_meta($entity_id, 'finance_status', true);
+		$address = (string) rma_map_meta_value($entity_id, array('_employer_address', '_address', 'logradouro'));
+		$about = (string) rma_map_meta_value($entity_id, array('about_company', 'description', 'descricao'));
+		$lat = (string) rma_map_meta_value($entity_id, array('lat', '_employer_latitude', '_latitude'));
+		$lng = (string) rma_map_meta_value($entity_id, array('lng', '_employer_longitude', '_longitude'));
+		$public_docs = rma_get_entity_public_documents($entity_id);
+
+		ob_start();
+		?>
+		<div class="rma-public-entity-card">
+			<style>
+				.rma-public-entity-card{border-radius:26px;background:linear-gradient(145deg,#ffffff,#f7fafc);box-shadow:0 24px 54px rgba(15,23,42,.14);padding:22px;border:1px solid rgba(15,23,42,.08)}
+				.rma-public-entity-head{background:linear-gradient(135deg,#7bad39,#5ddabb);color:#fff;border-radius:18px;padding:18px;margin-bottom:14px}
+				.rma-public-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 14px}
+				.rma-public-pill{border:1px solid #e2e8f0;border-radius:12px;padding:10px;background:#fff}
+				.rma-public-section{margin-top:12px;padding:14px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+				.rma-public-docs li{margin-bottom:8px}
+			</style>
+			<div class="rma-public-entity-head">
+				<h3 style="margin:0 0 6px;"><?php echo esc_html($entity_name); ?></h3>
+				<p style="margin:0;opacity:.95;"><?php echo esc_html(trim($city . ($uf !== '' ? '/' . $uf : ''), '/')); ?> · <?php echo esc_html($area); ?></p>
+			</div>
+			<div class="rma-public-grid">
+				<div class="rma-public-pill"><small>Status Governança</small><br/><strong><?php echo esc_html($governance_status !== '' ? strtoupper($governance_status) : 'PENDENTE'); ?></strong></div>
+				<div class="rma-public-pill"><small>Status Financeiro</small><br/><strong><?php echo esc_html($finance_status !== '' ? strtoupper($finance_status) : 'PENDENTE'); ?></strong></div>
+				<div class="rma-public-pill"><small>Endereço</small><br/><strong><?php echo esc_html($address !== '' ? $address : 'Não informado'); ?></strong></div>
+			</div>
+			<div class="rma-public-section">
+				<h4 style="margin:0 0 8px;"><?php echo esc_html__('Perfil institucional', 'exertio_theme'); ?></h4>
+				<p style="margin:0;color:#334155;"><?php echo esc_html($about !== '' ? $about : __('A entidade ainda não cadastrou uma descrição institucional pública.', 'exertio_theme')); ?></p>
+			</div>
+			<div class="rma-public-section">
+				<h4 style="margin:0 0 8px;"><?php echo esc_html__('Documentos públicos', 'exertio_theme'); ?></h4>
+				<p style="margin:0 0 10px;color:#64748b;"><?php echo esc_html__('Política de visibilidade: apenas documentos marcados para exibição pública pela própria entidade aparecem aqui.', 'exertio_theme'); ?></p>
+				<?php if (empty($public_docs)) : ?>
+					<p style="margin:0;color:#334155;"><?php echo esc_html__('Nenhum documento público disponível no momento.', 'exertio_theme'); ?></p>
+				<?php else : ?>
+					<ul class="rma-public-docs" style="margin:0;padding-left:16px;">
+						<?php foreach ($public_docs as $doc) : ?>
+							<li>
+								<?php if (!empty($doc['url'])) : ?><a href="<?php echo esc_url($doc['url']); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($doc['name']); ?></a><?php else : ?><?php echo esc_html($doc['name']); ?><?php endif; ?>
+								<?php if (!empty($doc['uploaded_at'])) : ?><small style="opacity:.65;"> · <?php echo esc_html($doc['uploaded_at']); ?></small><?php endif; ?>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
+			</div>
+			<div class="rma-public-section">
+				<h4 style="margin:0 0 8px;"><?php echo esc_html__('Localização no mapa', 'exertio_theme'); ?></h4>
+				<p style="margin:0;color:#334155;"><?php echo esc_html(($lat !== '' && $lng !== '') ? sprintf(__('Coordenadas: %s, %s', 'exertio_theme'), $lat, $lng) : __('Coordenadas não informadas. A localização regional aparece no diretório RMA.', 'exertio_theme')); ?></p>
+			</div>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+	add_shortcode('rma_public_entity_profile', 'rma_public_entity_profile_shortcode');
+}
