@@ -712,38 +712,49 @@ final class RMA_Finance_CRM {
         ?>
         <script>
         (function(){
-            var docsToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
-                return (node.textContent || '').trim().toLowerCase() === 'documentos';
-            });
-            if (!docsToggle) { return; }
+            function mountDocsMenu(){
+                var docsToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
+                    return (node.textContent || '').trim().toLowerCase() === 'documentos';
+                });
+                if (!docsToggle) { return false; }
 
-            var navLink = docsToggle.closest('a.nav-link');
-            if (!navLink) { return; }
+                var navLink = docsToggle.closest('a.nav-link');
+                if (!navLink) { return false; }
 
-            var collapseId = navLink.getAttribute('href');
-            if (!collapseId || collapseId.charAt(0) !== '#') { return; }
-            var collapse = document.querySelector(collapseId);
-            if (!collapse) { return; }
+                var collapseId = navLink.getAttribute('href');
+                if (!collapseId || collapseId.charAt(0) !== '#') { return false; }
+                var collapse = document.querySelector(collapseId);
+                if (!collapse) { return false; }
 
-            var base = window.location.origin + window.location.pathname;
-            var url = new URL(window.location.href);
-            var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
-            var linkClass = function(ext){ return 'nav-link' + (activeExt === ext ? ' active' : ''); };
-            var govExts = ['rma-governanca-documentos','rma-governanca-pendencias','rma-governanca-status','rma-governanca-upload'];
-            if (govExts.indexOf(activeExt) !== -1) {
-                collapse.classList.add('show');
-                navLink.classList.add('active');
-                navLink.setAttribute('aria-expanded', 'true');
+                var base = window.location.origin + window.location.pathname;
+                var url = new URL(window.location.href);
+                var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
+                var linkClass = function(ext){ return 'nav-link' + (activeExt === ext ? ' active' : ''); };
+                var govExts = ['rma-governanca-documentos','rma-governanca-pendencias','rma-governanca-status','rma-governanca-upload'];
+                if (govExts.indexOf(activeExt) !== -1) {
+                    collapse.classList.add('show');
+                    navLink.classList.add('active');
+                    navLink.setAttribute('aria-expanded', 'true');
+                }
+
+                collapse.innerHTML = [
+                    '<ul class="nav flex-column sub-menu">',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+base+'?ext=rma-governanca-documentos">Documentos Enviados</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+base+'?ext=rma-governanca-pendencias">Pendências</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+base+'?ext=rma-governanca-status">Status</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+base+'?ext=rma-governanca-upload">Enviar Documentos</a></li>',
+                    '</ul>'
+                ].join('');
+                return true;
             }
 
-            collapse.innerHTML = [
-                '<ul class="nav flex-column sub-menu">',
-                '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+base+'?ext=rma-governanca-documentos">Documentos Enviados</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+base+'?ext=rma-governanca-pendencias">Pendências</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+base+'?ext=rma-governanca-status">Status</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+base+'?ext=rma-governanca-upload">Enviar Documentos</a></li>',
-                '</ul>'
-            ].join('');
+            var tries = 0;
+            var timer = setInterval(function(){
+                tries++;
+                if (mountDocsMenu() || tries > 20) {
+                    clearInterval(timer);
+                }
+            }, 350);
         })();
         </script>
         <?php
@@ -757,39 +768,50 @@ final class RMA_Finance_CRM {
         ?>
         <script>
         (function(){
-            var financeToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
-                var txt = (node.textContent || '').trim().toLowerCase();
-                return txt === 'financeiro';
-            });
-            if (!financeToggle) { return; }
+            function mountFinanceMenu(){
+                var financeToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
+                    var txt = (node.textContent || '').trim().toLowerCase();
+                    return txt === 'financeiro';
+                });
+                if (!financeToggle) { return false; }
 
-            var navLink = financeToggle.closest('a.nav-link');
-            if (!navLink) { return; }
+                var navLink = financeToggle.closest('a.nav-link');
+                if (!navLink) { return false; }
 
-            var collapseId = navLink.getAttribute('href');
-            if (!collapseId || collapseId.charAt(0) !== '#') { return; }
-            var collapse = document.querySelector(collapseId);
-            if (!collapse) { return; }
+                var collapseId = navLink.getAttribute('href');
+                if (!collapseId || collapseId.charAt(0) !== '#') { return false; }
+                var collapse = document.querySelector(collapseId);
+                if (!collapse) { return false; }
 
-            var base = window.location.origin + window.location.pathname;
-            var url = new URL(window.location.href);
-            var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
-            var linkClass = function(ext){ return 'nav-link' + (activeExt === ext ? ' active' : ''); };
-            var finExts = ['rma-financeiro-visao-geral','rma-financeiro-cobranca','rma-financeiro-pix','rma-financeiro-historico','rma-financeiro-relatorios'];
-            if (finExts.indexOf(activeExt) !== -1) {
-                collapse.classList.add('show');
-                navLink.classList.add('active');
-                navLink.setAttribute('aria-expanded', 'true');
+                var base = window.location.origin + window.location.pathname;
+                var url = new URL(window.location.href);
+                var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
+                var linkClass = function(ext){ return 'nav-link' + (activeExt === ext ? ' active' : ''); };
+                var finExts = ['rma-financeiro-visao-geral','rma-financeiro-cobranca','rma-financeiro-pix','rma-financeiro-historico','rma-financeiro-relatorios'];
+                if (finExts.indexOf(activeExt) !== -1) {
+                    collapse.classList.add('show');
+                    navLink.classList.add('active');
+                    navLink.setAttribute('aria-expanded', 'true');
+                }
+                collapse.innerHTML = [
+                    '<ul class="nav flex-column sub-menu">',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-visao-geral')+'" href="'+base+'?ext=rma-financeiro-visao-geral">Visão Geral</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-cobranca')+'" href="'+base+'?ext=rma-financeiro-cobranca">Minha Cobrança</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-pix')+'" href="'+base+'?ext=rma-financeiro-pix">Meu PIX</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-historico')+'" href="'+base+'?ext=rma-financeiro-historico">Histórico</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-relatorios')+'" href="'+base+'?ext=rma-financeiro-relatorios">Relatórios</a></li>',
+                    '</ul>'
+                ].join('');
+                return true;
             }
-            collapse.innerHTML = [
-                '<ul class="nav flex-column sub-menu">',
-                '<li class="nav-item"><a class="'+linkClass('rma-financeiro-visao-geral')+'" href="'+base+'?ext=rma-financeiro-visao-geral">Visão Geral</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-financeiro-cobranca')+'" href="'+base+'?ext=rma-financeiro-cobranca">Minha Cobrança</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-financeiro-pix')+'" href="'+base+'?ext=rma-financeiro-pix">Meu PIX</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-financeiro-historico')+'" href="'+base+'?ext=rma-financeiro-historico">Histórico</a></li>',
-                '<li class="nav-item"><a class="'+linkClass('rma-financeiro-relatorios')+'" href="'+base+'?ext=rma-financeiro-relatorios">Relatórios</a></li>',
-                '</ul>'
-            ].join('');
+
+            var tries = 0;
+            var timer = setInterval(function(){
+                tries++;
+                if (mountFinanceMenu() || tries > 20) {
+                    clearInterval(timer);
+                }
+            }, 350);
         })();
         </script>
         <?php
@@ -802,28 +824,39 @@ final class RMA_Finance_CRM {
         ?>
         <script>
         (function(){
-            var supportToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
-                return (node.textContent || '').trim().toLowerCase() === 'suporte';
-            });
-            if (!supportToggle) { return; }
+            function mountSupportMenu(){
+                var supportToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
+                    return (node.textContent || '').trim().toLowerCase() === 'suporte';
+                });
+                if (!supportToggle) { return false; }
 
-            var navLink = supportToggle.closest('a.nav-link');
-            if (!navLink) { return; }
+                var navLink = supportToggle.closest('a.nav-link');
+                if (!navLink) { return false; }
 
-            var icon = navLink.querySelector('i.menu-icon, i');
-            if (icon) {
-                icon.className = 'mdi mdi-lifebuoy menu-icon';
+                var icon = navLink.querySelector('i.menu-icon, i');
+                if (icon) {
+                    icon.className = 'mdi mdi-lifebuoy menu-icon';
+                }
+
+                var base = window.location.origin + window.location.pathname;
+                var url = new URL(window.location.href);
+                var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
+                var supportExts = ['saved-services','rma-suporte','rma-suporte-novo','rma-suporte-tickets'];
+
+                navLink.setAttribute('href', base + '?ext=saved-services');
+                if (supportExts.indexOf(activeExt) !== -1) {
+                    navLink.classList.add('active');
+                }
+                return true;
             }
 
-            var base = window.location.origin + window.location.pathname;
-            var url = new URL(window.location.href);
-            var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
-            var supportExts = ['saved-services','rma-suporte','rma-suporte-novo','rma-suporte-tickets'];
-
-            navLink.setAttribute('href', base + '?ext=saved-services');
-            if (supportExts.indexOf(activeExt) !== -1) {
-                navLink.classList.add('active');
-            }
+            var tries = 0;
+            var timer = setInterval(function(){
+                tries++;
+                if (mountSupportMenu() || tries > 20) {
+                    clearInterval(timer);
+                }
+            }, 350);
         })();
         </script>
         <?php
@@ -852,14 +885,26 @@ final class RMA_Finance_CRM {
         <script>
         (function(){
             var html = <?php echo wp_json_encode($content); ?>;
-            var selectors = ['.main-panel .content-wrapper','.main-content .content-wrapper','.main-content','.content-wrapper','.dashboard-content-area'];
-            var target = null;
-            for (var i=0;i<selectors.length;i++) {
-                target = document.querySelector(selectors[i]);
-                if (target) { break; }
+            var selectors = ['.main-panel .content-wrapper','.main-content .content-wrapper','.main-content','.content-wrapper','.dashboard-content-area','.dashboard-inner .row','.dashboard-wrapper'];
+
+            function mount(){
+                var target = null;
+                for (var i=0;i<selectors.length;i++) {
+                    target = document.querySelector(selectors[i]);
+                    if (target) { break; }
+                }
+                if (!target) { return false; }
+                target.innerHTML = html;
+                return true;
             }
-            if (!target) { return; }
-            target.innerHTML = html;
+
+            var tries = 0;
+            var timer = setInterval(function(){
+                tries++;
+                if (mount() || tries > 20) {
+                    clearInterval(timer);
+                }
+            }, 350);
         })();
         </script>
         <?php
@@ -985,63 +1030,95 @@ final class RMA_Finance_CRM {
         (function(){
             var cards = <?php echo wp_json_encode($cards); ?>;
             var glassCards = <?php echo wp_json_encode($glass_cards); ?>;
-            var wrappers = document.querySelectorAll('.info-boxes .metric');
-            if (!wrappers || wrappers.length === 0) { return; }
+            var cardAliases = ['projetos publicados','projetos em destaque','projetos em andamento','projetos concluídos'];
 
-            for (var i = 0; i < wrappers.length && i < cards.length; i++) {
-                var item = cards[i] || {};
-                var titleEl = wrappers[i].querySelector('.title');
-                var numEl = wrappers[i].querySelector('.number');
-                var linkEl = wrappers[i].querySelector('a');
-                if (titleEl && item.title) { titleEl.textContent = item.title; }
-                if (numEl && typeof item.value !== 'undefined') { numEl.textContent = String(item.value); }
-                if (linkEl && item.url) { linkEl.setAttribute('href', item.url); }
-            }
+            function mountDashboardCustomizations() {
+                var wrappers = document.querySelectorAll('.info-boxes .metric');
 
-            var infoBoxes = document.querySelector('.info-boxes');
-            if (infoBoxes && !document.getElementById('rma-entity-glass-cards')) {
-                var style = document.createElement('style');
-                style.textContent = '.rma-glass-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0 20px}.rma-glass-card{position:relative;display:block;padding:16px 16px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.35);background:linear-gradient(135deg,rgba(123,173,57,.28),rgba(93,218,187,.22) 55%,rgba(30,207,152,.22));box-shadow:0 14px 32px rgba(27,39,59,.14);backdrop-filter:blur(8px);text-decoration:none;color:#17324d;overflow:hidden}.rma-glass-card:before{content:"";position:absolute;inset:-45% auto auto -25%;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.45),rgba(255,255,255,0));pointer-events:none}.rma-glass-icon{font-size:20px;line-height:1;margin-bottom:10px}.rma-glass-title{margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#24445f}.rma-glass-value{margin:0 0 4px;font-size:24px;font-weight:800;color:#0f2740}.rma-glass-desc{margin:0;font-size:13px;line-height:1.35;color:#315670}';
-                document.head.appendChild(style);
-
-                var glassGrid = document.createElement('div');
-                glassGrid.id = 'rma-entity-glass-cards';
-                glassGrid.className = 'rma-glass-grid';
-                glassCards.forEach(function(item){
-                    var link = document.createElement('a');
-                    link.className = 'rma-glass-card';
-                    link.href = item.url || '#';
-                    link.innerHTML = '<div class="rma-glass-icon">'+(item.icon || '✨')+'</div><p class="rma-glass-title">'+(item.title || '')+'</p><p class="rma-glass-value">'+(item.value || '0')+'</p><p class="rma-glass-desc">'+(item.desc || '')+'</p>';
-                    glassGrid.appendChild(link);
-                });
-                infoBoxes.insertAdjacentElement('afterend', glassGrid);
-            }
-
-            var profileVisitsCard = Array.prototype.slice.call(document.querySelectorAll('.card, .dashboard-card, .widget')).find(function(node){
-                var heading = node.querySelector('h2,h3,h4,.card-title');
-                if (!heading) { return false; }
-                var txt = (heading.textContent || '').toLowerCase();
-                return txt.indexOf('visualiza') !== -1 && txt.indexOf('perfil') !== -1;
-            });
-
-            if (profileVisitsCard) {
-                var parentRow = profileVisitsCard.closest('.row');
-                if (parentRow) {
-                    Array.prototype.slice.call(parentRow.children).forEach(function(col){
-                        if (!col.contains(profileVisitsCard)) {
-                            col.style.display = 'none';
-                        } else {
-                            col.classList.remove('col-xl-8','col-lg-8','col-md-8','col-xl-9','col-lg-9','col-md-9');
-                            col.classList.add('col-12');
-                        }
+                if ((!wrappers || wrappers.length === 0)) {
+                    wrappers = Array.prototype.slice.call(document.querySelectorAll('.metric,.counter-box,.card')).filter(function(node){
+                        var t = (node.textContent || '').toLowerCase();
+                        return cardAliases.some(function(alias){ return t.indexOf(alias) !== -1; });
                     });
                 }
+
+                if (wrappers && wrappers.length > 0) {
+                    for (var i = 0; i < wrappers.length && i < cards.length; i++) {
+                        var item = cards[i] || {};
+                        var titleEl = wrappers[i].querySelector('.title,.counter-title,h6,h5,h4');
+                        var numEl = wrappers[i].querySelector('.number,.counter-value,strong,h3');
+                        var linkEl = wrappers[i].querySelector('a');
+                        if (titleEl && item.title) { titleEl.textContent = item.title; }
+                        if (numEl && typeof item.value !== 'undefined') { numEl.textContent = String(item.value); }
+                        if (linkEl && item.url) { linkEl.setAttribute('href', item.url); }
+                    }
+                }
+
+                var infoBoxes = document.querySelector('.info-boxes') || (wrappers && wrappers[0] ? wrappers[0].closest('.row') : null);
+                if (infoBoxes && !document.getElementById('rma-entity-glass-cards')) {
+                    if (!document.getElementById('rma-entity-glass-cards-style')) {
+                        var style = document.createElement('style');
+                        style.id = 'rma-entity-glass-cards-style';
+                        style.textContent = '.rma-glass-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0 20px}.rma-glass-card{position:relative;display:block;padding:16px 16px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.35);background:linear-gradient(135deg,rgba(123,173,57,.28),rgba(93,218,187,.22) 55%,rgba(30,207,152,.22));box-shadow:0 14px 32px rgba(27,39,59,.14);backdrop-filter:blur(8px);text-decoration:none;color:#17324d;overflow:hidden}.rma-glass-card:before{content:"";position:absolute;inset:-45% auto auto -25%;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.45),rgba(255,255,255,0));pointer-events:none}.rma-glass-icon{font-size:20px;line-height:1;margin-bottom:10px}.rma-glass-title{margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#24445f}.rma-glass-value{margin:0 0 4px;font-size:24px;font-weight:800;color:#0f2740}.rma-glass-desc{margin:0;font-size:13px;line-height:1.35;color:#315670}';
+                        document.head.appendChild(style);
+                    }
+
+                    var glassGrid = document.createElement('div');
+                    glassGrid.id = 'rma-entity-glass-cards';
+                    glassGrid.className = 'rma-glass-grid';
+                    glassCards.forEach(function(item){
+                        var link = document.createElement('a');
+                        link.className = 'rma-glass-card';
+                        link.href = item.url || '#';
+                        link.innerHTML = '<div class="rma-glass-icon">'+(item.icon || '✨')+'</div><p class="rma-glass-title">'+(item.title || '')+'</p><p class="rma-glass-value">'+(item.value || '0')+'</p><p class="rma-glass-desc">'+(item.desc || '')+'</p>';
+                        glassGrid.appendChild(link);
+                    });
+                    infoBoxes.insertAdjacentElement('afterend', glassGrid);
+                }
+
+                var profileVisitsCard = Array.prototype.slice.call(document.querySelectorAll('.card, .dashboard-card, .widget')).find(function(node){
+                    var heading = node.querySelector('h2,h3,h4,.card-title');
+                    if (!heading) { return false; }
+                    var txt = (heading.textContent || '').toLowerCase();
+                    return txt.indexOf('visualiza') !== -1 && txt.indexOf('perfil') !== -1;
+                });
+
+                if (profileVisitsCard) {
+                    var parentRow = profileVisitsCard.closest('.row');
+                    if (parentRow) {
+                        Array.prototype.slice.call(parentRow.children).forEach(function(col){
+                            if (!col.contains(profileVisitsCard)) {
+                                col.style.display = 'none';
+                            } else {
+                                col.classList.remove('col-xl-8','col-lg-8','col-md-8','col-xl-9','col-lg-9','col-md-9');
+                                col.classList.add('col-12');
+                            }
+                        });
+                    }
+                }
+
+                var breadcrumb = document.querySelector('.breadcrumb-item.active');
+                if (breadcrumb) {
+                    breadcrumb.textContent = 'Painel de controle inteligente';
+                }
+
+                return (wrappers && wrappers.length > 0) || !!profileVisitsCard;
             }
 
-            var breadcrumb = document.querySelector('.breadcrumb-item.active');
-            if (breadcrumb) {
-                breadcrumb.textContent = 'Painel de controle inteligente';
-            }
+            var attempts = 0;
+            var timer = setInterval(function(){
+                attempts++;
+                var mounted = mountDashboardCustomizations();
+                if (mounted || attempts > 20) {
+                    clearInterval(timer);
+                }
+            }, 400);
+
+            var observer = new MutationObserver(function(){
+                mountDashboardCustomizations();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            setTimeout(function(){ observer.disconnect(); }, 12000);
         })();
         </script>
         <?php
@@ -1062,14 +1139,26 @@ final class RMA_Finance_CRM {
         <script>
         (function(){
             var html = <?php echo wp_json_encode($content); ?>;
-            var selectors = ['.main-panel .content-wrapper','.main-content .content-wrapper','.main-content','.content-wrapper','.dashboard-content-area'];
-            var target = null;
-            for (var i=0;i<selectors.length;i++) {
-                target = document.querySelector(selectors[i]);
-                if (target) { break; }
+            var selectors = ['.main-panel .content-wrapper','.main-content .content-wrapper','.main-content','.content-wrapper','.dashboard-content-area','.dashboard-inner .row','.dashboard-wrapper'];
+
+            function mount(){
+                var target = null;
+                for (var i=0;i<selectors.length;i++) {
+                    target = document.querySelector(selectors[i]);
+                    if (target) { break; }
+                }
+                if (!target) { return false; }
+                target.innerHTML = html;
+                return true;
             }
-            if (!target) { return; }
-            target.innerHTML = html;
+
+            var tries = 0;
+            var timer = setInterval(function(){
+                tries++;
+                if (mount() || tries > 20) {
+                    clearInterval(timer);
+                }
+            }, 350);
         })();
         </script>
         <?php
