@@ -1583,7 +1583,6 @@ final class RMA_Governance {
                     '<ul class="nav flex-column sub-menu">',
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-visao-geral')+'" href="'+extUrl('rma-financeiro-visao-geral')+'">Visão Geral</a></li>',
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-cobranca')+'" href="'+extUrl('rma-financeiro-cobranca')+'">Minha Cobrança</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-pix')+'" href="'+extUrl('rma-financeiro-pix')+'">Meu PIX</a></li>',
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-historico')+'" href="'+extUrl('rma-financeiro-historico')+'">Histórico</a></li>',
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-relatorios')+'" href="'+extUrl('rma-financeiro-relatorios')+'">Relatórios</a></li>',
                     '</ul>'
@@ -1666,50 +1665,176 @@ final class RMA_Governance {
             return '<div style="background:#fff;border:1px solid #dbe7f3;border-radius:12px;padding:14px">Nenhuma entidade vinculada.</div>';
         }
 
+        $ext = $ext === 'rma-financeiro-pix' ? 'rma-financeiro-cobranca' : $ext;
         $entity_name = (string) get_the_title($entity_id);
-        $finance_status = (string) get_post_meta($entity_id, 'finance_status', true);
-        $due_date = (string) get_post_meta($entity_id, 'anuidade_vencimento', true);
-        $due_date = $due_date !== '' ? wp_date('d/m/Y', strtotime($due_date)) : 'Não definido';
+        $finance_status = sanitize_key((string) get_post_meta($entity_id, 'finance_status', true));
+        $status_label = $finance_status === 'adimplente' ? '🟢 Adimplente' : '🔴 Inadimplente';
+
+        $due_raw = (string) get_post_meta($entity_id, 'anuidade_vencimento', true);
+        if ($due_raw === '') {
+            $due_raw = (string) get_post_meta($entity_id, 'finance_due_at', true);
+        }
+        $due_ts = $due_raw !== '' ? strtotime($due_raw . ' UTC') : 0;
+        $due_date = $due_ts ? wp_date('d/m/Y', $due_ts) : 'Não definido';
+        $days_left = $due_ts ? (int) floor(($due_ts - time()) / DAY_IN_SECONDS) : 0;
+
+        $annual_value = (float) get_option('rma_annual_due_value', '0');
+        $annual_value_label = 'R$ ' . number_format($annual_value, 2, ',', '.');
 
         $history = get_post_meta($entity_id, 'finance_history', true);
         $history = is_array($history) ? array_reverse($history) : [];
-        $tickets = get_post_meta($entity_id, 'rma_support_tickets', true);
-        $tickets = is_array($tickets) ? array_reverse($tickets) : [];
+        $last_payment = $history[0] ?? null;
 
-        $rows = '';
-        if ($ext === 'rma-financeiro-historico' || $ext === 'rma-financeiro-relatorios') {
-            foreach (array_slice($history, 0, 15) as $item) {
-                $rows .= '<tr><td>' . esc_html(strtoupper((string) ($item['finance_status'] ?? '-'))) . '</td><td>' . esc_html((string) ($item['year'] ?? '-')) . '</td><td>' . esc_html((string) ($item['paid_at'] ?? '-')) . '</td></tr>';
+        $latest_order = null;
+        if (function_exists('wc_get_orders')) {
+            $orders = wc_get_orders([
+                'limit' => 1,
+                'orderby' => 'date',
+                'order' => 'DESC',
+                'status' => ['pending', 'on-hold', 'processing', 'completed', 'cancelled', 'failed', 'refunded'],
+                'meta_key' => 'rma_entity_id',
+                'meta_value' => $entity_id,
+            ]);
+            if (! empty($orders) && $orders[0] instanceof WC_Order) {
+                $latest_order = $orders[0];
             }
-            if ($rows === '') {
-                $rows = '<tr><td colspan="3">Sem histórico financeiro disponível.</td></tr>';
+        }
+
+        $order_status = $latest_order instanceof WC_Order ? (string) $latest_order->get_status() : 'nao_gerada';
+        $order_total = $latest_order instanceof WC_Order ? 'R$ ' . number_format((float) $latest_order->get_total(), 2, ',', '.') : $annual_value_label;
+        $pix_payload = $latest_order instanceof WC_Order ? (string) $latest_order->get_meta('rma_pix_payload') : '';
+        $pix_qr = $latest_order instanceof WC_Order ? (string) $latest_order->get_meta('rma_pix_qrcode') : '';
+
+        $mandate_keys = ['mandato_fim', 'diretoria_mandato_fim', 'governance_board_mandate_until'];
+        $mandate_ts = 0;
+        foreach ($mandate_keys as $key) {
+            $v = (string) get_post_meta($entity_id, $key, true);
+            if ($v !== '') {
+                $mandate_ts = strtotime($v . ' UTC');
+                if ($mandate_ts) {
+                    break;
+                }
             }
-        } elseif ($ext === 'saved-services' || strpos($ext, 'rma-suporte') === 0) {
-            foreach (array_slice($tickets, 0, 15) as $t) {
-                $rows .= '<tr><td>' . esc_html((string) ($t['id'] ?? '-')) . '</td><td>' . esc_html(strtoupper((string) ($t['priority'] ?? 'media'))) . '</td><td>' . esc_html(strtoupper((string) ($t['status'] ?? 'aberto'))) . '</td></tr>';
+        }
+
+        $alerts = [];
+        if ($mandate_ts) {
+            $days_to_mandate = (int) floor(($mandate_ts - time()) / DAY_IN_SECONDS);
+            if ($days_to_mandate <= 45) {
+                $alerts[] = '⚠ Seu mandato vence em ' . max(0, $days_to_mandate) . ' dias. Atualize os dados da diretoria.';
             }
-            if ($rows === '') {
-                $rows = '<tr><td colspan="3">Nenhum ticket de suporte aberto.</td></tr>';
+        }
+        if ($finance_status !== 'adimplente') {
+            $alerts[] = '⚠ Anuidade pendente pode gerar restrições institucionais.';
+        }
+
+        $tabs = [
+            'rma-financeiro-visao-geral' => 'Visão Geral',
+            'rma-financeiro-cobranca' => 'Minha Cobrança',
+            'rma-financeiro-historico' => 'Histórico',
+        ];
+
+        $base = home_url('/dashboard/');
+        $html = $this->render_entity_governance_styles();
+        $html .= '<div class="rma-gov-entity-wrap">';
+        $html .= '<div class="rma-gov-entity-tabs">';
+        foreach ($tabs as $key => $label) {
+            $class = $ext === $key ? ' is-active' : '';
+            $html .= '<a class="rma-gov-entity-tab' . esc_attr($class) . '" href="' . esc_url(add_query_arg('ext', $key, $base)) . '">' . esc_html($label) . '</a>';
+        }
+        $html .= '</div>';
+
+        if ($ext === 'rma-financeiro-visao-geral') {
+            $html .= '<div class="rma-gov-entity-head"><h3>Dashboard Financeiro</h3><p>Estou em dia? Quanto devo? O que preciso fazer agora?</p></div>';
+            $html .= '<div class="rma-gov-entity-meta">';
+            $html .= '<div class="rma-gov-entity-card"><small>Status da filiação</small><strong>' . esc_html($status_label . ' até ' . $due_date) . '</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Próximo vencimento</small><strong>' . esc_html($due_date) . ' · ' . esc_html((string) max(0, $days_left)) . ' dias</strong></div>';
+            $last_label = $last_payment ? ('Ano: ' . (string) ($last_payment['year'] ?? '-') . ' · Data: ' . (string) ($last_payment['paid_at'] ?? '-') . ' · Forma: PIX') : 'Sem pagamento confirmado';
+            $html .= '<div class="rma-gov-entity-card"><small>Último pagamento</small><strong>' . esc_html($last_label) . '</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Anuidade atual</small><strong>' . esc_html('Anuidade RMA ' . gmdate('Y') . ' · ' . $annual_value_label) . '</strong></div>';
+            $html .= '</div>';
+            $html .= '<p style="margin:0 0 10px"><a class="rma-gov-entity-tab is-active" href="' . esc_url(add_query_arg('ext', 'rma-financeiro-cobranca', $base)) . '">Gerar cobrança</a></p>';
+            $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Situação da entidade</th><th>Status</th></tr></thead><tbody>';
+            $html .= '<tr><td>Participação na rede</td><td>✔ Ativa</td></tr><tr><td>Visibilidade no mapa</td><td>✔ Habilitada</td></tr><tr><td>Direito a voto em assembleias</td><td>' . ($finance_status === 'adimplente' ? '✔ Habilitado' : '⚠ Pode sofrer restrições') . '</td></tr>';
+            if (empty($alerts)) {
+                $html .= '<tr><td>Alertas automáticos</td><td>Sem alertas críticos no momento.</td></tr>';
+            } else {
+                foreach ($alerts as $alert) {
+                    $html .= '<tr><td>Alerta automático</td><td>' . esc_html($alert) . '</td></tr>';
+                }
             }
+            $html .= '</tbody></table></div>';
+        } elseif ($ext === 'rma-financeiro-cobranca') {
+            $checkout_url = home_url('/checkout/');
+            $product_id = (int) get_option('rma_annual_dues_product_id', 0);
+            $generate_url = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => 1], $checkout_url) : $checkout_url;
+            $status_human = [
+                'nao_gerada' => 'Não gerada',
+                'pending' => 'Aguardando pagamento',
+                'on-hold' => 'Aguardando pagamento',
+                'processing' => 'Paga',
+                'completed' => 'Paga',
+                'failed' => 'Vencida',
+                'cancelled' => 'Vencida',
+            ];
+            $html .= '<div class="rma-gov-entity-head"><h3>Minha Cobrança</h3><p>Gere e pague sua anuidade com PIX.</p></div>';
+            $html .= '<div class="rma-gov-entity-meta">';
+            $html .= '<div class="rma-gov-entity-card"><small>Cobrança atual</small><strong>Anuidade ' . esc_html(gmdate('Y')) . ' · ' . esc_html($order_total) . '</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Vencimento</small><strong>' . esc_html($due_date) . '</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Status</small><strong>' . esc_html($status_human[$order_status] ?? strtoupper($order_status)) . '</strong></div>';
+            $html .= '</div>';
+            $html .= '<p style="margin:0 0 10px"><a class="rma-gov-entity-tab is-active" href="' . esc_url($generate_url) . '">Gerar cobrança PIX</a></p>';
+            $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Área de pagamento</th><th>Conteúdo</th></tr></thead><tbody>';
+            $html .= '<tr><td>QR Code PIX</td><td>' . ($pix_qr !== '' ? '<img src="' . esc_url($pix_qr) . '" alt="QR Code PIX" style="max-width:180px;height:auto" />' : 'Será exibido após geração da cobrança.') . '</td></tr>';
+            $html .= '<tr><td>Código copia e cola</td><td>' . ($pix_payload !== '' ? '<code>' . esc_html($pix_payload) . '</code>' : 'Será exibido após geração da cobrança.') . '</td></tr>';
+            $html .= '<tr><td>Instruções</td><td>Após o pagamento a confirmação é automática e pode levar alguns minutos.</td></tr>';
+            $html .= '<tr><td>Verificação manual</td><td><a class="rma-gov-entity-link" href="' . esc_url(add_query_arg(['ext' => 'rma-financeiro-cobranca', 'recheck' => '1'], $base)) . '">Já paguei</a></td></tr>';
+            $html .= '</tbody></table></div>';
+        } elseif ($ext === 'rma-financeiro-historico' || $ext === 'rma-financeiro-relatorios') {
+            $html .= '<div class="rma-gov-entity-head"><h3>Histórico Financeiro</h3><p>Todos os pagamentos realizados pela entidade.</p></div>';
+            $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Ano</th><th>Valor</th><th>Status</th><th>Data pagamento</th><th>Forma</th><th>Comprovante</th></tr></thead><tbody>';
+            if (empty($history)) {
+                $html .= '<tr><td colspan="6">Sem histórico financeiro disponível.</td></tr>';
+            } else {
+                foreach (array_slice($history, 0, 20) as $item) {
+                    $total = 'R$ ' . number_format((float) ($item['total'] ?? 0), 2, ',', '.');
+                    $order_id = (int) ($item['order_id'] ?? 0);
+                    $receipt_url = '#';
+                    if ($order_id > 0 && function_exists('wc_get_order')) {
+                        $ord = wc_get_order($order_id);
+                        if ($ord instanceof WC_Order) {
+                            $receipt_url = $ord->get_view_order_url();
+                        }
+                    }
+                    $html .= '<tr><td>' . esc_html((string) ($item['year'] ?? '-')) . '</td><td>' . esc_html($total) . '</td><td>' . esc_html(strtoupper((string) ($item['finance_status'] ?? '-'))) . '</td><td>' . esc_html((string) ($item['paid_at'] ?? '-')) . '</td><td>PIX</td><td>' . ($receipt_url !== '#' ? '<a class="rma-gov-entity-link" href="' . esc_url($receipt_url) . '">Baixar recibo</a>' : '—') . '</td></tr>';
+                }
+            }
+            $html .= '</tbody></table></div>';
+            $html .= '<div style="margin-top:10px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:10px"><strong>Linha do tempo:</strong> ';
+            $timeline = [];
+            foreach (array_slice($history, 0, 5) as $item) {
+                $timeline[] = esc_html((string) ($item['year'] ?? '-')) . ' ✔ ' . esc_html(strtoupper((string) ($item['finance_status'] ?? 'PAGO')));
+            }
+            $html .= implode(' · ', $timeline ?: ['Sem registros']);
+            $html .= '</div>';
         } else {
-            $rows = '<tr><td>Status financeiro</td><td colspan="2">' . esc_html(strtoupper($finance_status !== '' ? $finance_status : 'inadimplente')) . '</td></tr>'
-                . '<tr><td>Vencimento</td><td colspan="2">' . esc_html($due_date) . '</td></tr>';
+            $html .= '<div class="rma-gov-entity-head"><h3>Suporte da Entidade</h3><p>Abra e acompanhe tickets com a Equipe RMA.</p></div>';
+            $tickets = get_post_meta($entity_id, 'rma_support_tickets', true);
+            $tickets = is_array($tickets) ? array_reverse($tickets) : [];
+            $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Ticket</th><th>Prioridade</th><th>Status</th></tr></thead><tbody>';
+            if (empty($tickets)) {
+                $html .= '<tr><td colspan="3">Nenhum ticket aberto.</td></tr>';
+            } else {
+                foreach (array_slice($tickets, 0, 15) as $t) {
+                    $html .= '<tr><td>' . esc_html((string) ($t['id'] ?? '-')) . '</td><td>' . esc_html(strtoupper((string) ($t['priority'] ?? 'media'))) . '</td><td>' . esc_html(strtoupper((string) ($t['status'] ?? 'aberto'))) . '</td></tr>';
+                }
+            }
+            $html .= '</tbody></table></div>';
         }
 
-        $title = 'Financeiro da Entidade';
-        if ($ext === 'saved-services' || strpos($ext, 'rma-suporte') === 0) {
-            $title = 'Suporte da Entidade';
-        }
+        $html .= '</div>';
 
-        return '<div class="rma-gov-entity-wrap">'
-            . '<div class="rma-gov-entity-head"><h3>' . esc_html($title) . '</h3><p>Conteúdo dedicado renderizado no fluxo do dashboard da entidade.</p></div>'
-            . '<div class="rma-gov-entity-meta">'
-            . '<div class="rma-gov-entity-card"><small>Entidade</small><strong>' . esc_html($entity_name) . '</strong></div>'
-            . '<div class="rma-gov-entity-card"><small>Status financeiro</small><strong>' . esc_html(strtoupper($finance_status !== '' ? $finance_status : 'inadimplente')) . '</strong></div>'
-            . '<div class="rma-gov-entity-card"><small>Vencimento</small><strong>' . esc_html($due_date) . '</strong></div>'
-            . '</div>'
-            . '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Item</th><th>Referência</th><th>Status/Data</th></tr></thead><tbody>' . $rows . '</tbody></table></div>'
-            . '</div>';
+        return $html;
     }
 
     private function redirect_entity_dashboard_notice(string $message, string $type): void {
