@@ -1753,17 +1753,18 @@ final class RMA_Governance {
             for ($qty = 1; $qty <= 3; $qty++) {
                 $label = $qty . ' anuidade' . ($qty > 1 ? 's' : '');
                 $link = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => $qty], $checkout_url) : $checkout_url;
-                $generate_links[] = '<a class="rma-gov-entity-link" href="' . esc_url($link) . '">' . esc_html($label) . '</a>';
+                $generate_links[] = '<a class="rma-gov-entity-link rma-fin-link-pill" href="' . esc_url($link) . '">' . esc_html($label) . '</a>';
             }
             $html .= '<div class="rma-gov-entity-head"><h3>Dashboard Financeiro</h3><p>Estou em dia? Quanto devo? O que preciso fazer agora?</p></div>';
             $html .= '<div class="rma-gov-entity-meta">';
-            $html .= '<div class="rma-gov-entity-card"><small>Status da filiação</small><strong>' . esc_html($status_label) . '</strong><span style="display:block;margin-top:4px">' . esc_html($status_hint) . '</span></div>';
-            $html .= '<div class="rma-gov-entity-card"><small>Próximo vencimento</small><strong>' . esc_html($due_date) . '</strong><span style="display:block;margin-top:4px">Dias restantes: ' . esc_html((string) max(0, $days_left)) . '</span></div>';
+            $status_chip = $finance_status === 'adimplente' ? '<span class="rma-fin-chip is-success">Adimplente</span>' : '<span class="rma-fin-chip is-danger">Inadimplente</span>';
+            $html .= '<div class="rma-gov-entity-card rma-fin-highlight"><small>Status da filiação</small>' . $status_chip . '<strong>' . esc_html($status_label) . '</strong><span class="rma-fin-subline">' . esc_html($status_hint) . '</span></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Próximo vencimento</small><strong>' . esc_html($due_date) . '</strong><span class="rma-fin-subline">Dias restantes: ' . esc_html((string) max(0, $days_left)) . '</span></div>';
             $last_label = $last_payment ? ('Ano: ' . (string) ($last_payment['year'] ?? '-') . ' · Data: ' . (string) ($last_payment['paid_at'] ?? '-') . ' · Forma: PIX') : 'Sem pagamento confirmado';
             $html .= '<div class="rma-gov-entity-card"><small>Último pagamento</small><strong>' . esc_html($last_label) . '</strong></div>';
             $html .= '<div class="rma-gov-entity-card"><small>Valor da anuidade atual</small><strong>' . esc_html('Anuidade RMA ' . (string) $annual_year . ' · ' . $annual_value_label) . '</strong></div>';
             $html .= '</div>';
-            $html .= '<div style="margin:0 0 10px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:10px"><strong>Gerar cobrança:</strong> escolha quantas anuidades deseja pagar agora. ' . implode(' · ', $generate_links) . '</div>';
+            $html .= '<div class="rma-fin-cta"><strong>Gerar cobrança</strong><span>Escolha quantas anuidades deseja pagar agora e siga para o checkout.</span><div class="rma-fin-links">' . implode('', $generate_links) . '</div></div>';
             $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Situação da entidade</th><th>Status</th></tr></thead><tbody>';
             $html .= '<tr><td>Participação na rede</td><td>✔ Ativa</td></tr><tr><td>Visibilidade no mapa</td><td>✔ Habilitada</td></tr><tr><td>Direito a voto em assembleias</td><td>' . ($finance_status === 'adimplente' ? '✔ Habilitado' : '⚠ Pode sofrer restrições') . '</td></tr>';
             if ($finance_status !== 'adimplente') {
@@ -1785,7 +1786,7 @@ final class RMA_Governance {
             for ($qty = 1; $qty <= 3; $qty++) {
                 $label = 'Gerar ' . $qty . ' anuidade' . ($qty > 1 ? 's' : '');
                 $link = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => $qty], $checkout_url) : $checkout_url;
-                $generate_links[] = '<a class="rma-gov-entity-link" href="' . esc_url($link) . '">' . esc_html($label) . '</a>';
+                $generate_links[] = '<a class="rma-gov-entity-link rma-fin-link-pill" href="' . esc_url($link) . '">' . esc_html($label) . '</a>';
             }
             $status_human = [
                 'nao_gerada' => 'Não gerada',
@@ -1802,8 +1803,7 @@ final class RMA_Governance {
             $html .= '<div class="rma-gov-entity-card"><small>Vencimento</small><strong>' . esc_html($due_date) . '</strong></div>';
             $html .= '<div class="rma-gov-entity-card"><small>Status</small><strong>' . esc_html($status_human[$order_status] ?? strtoupper($order_status)) . '</strong></div>';
             $html .= '</div>';
-            $html .= '<p style="margin:0 0 10px"><a class="rma-gov-entity-tab is-active" href="' . esc_url($generate_url) . '">Gerar cobrança PIX</a></p>';
-            $html .= '<p style="margin:0 0 10px">' . implode(' · ', $generate_links) . '</p>';
+            $html .= '<div class="rma-fin-cta"><strong>Cobrança PIX</strong><span>Gere uma cobrança instantânea ou selecione múltiplas anuidades.</span><div class="rma-fin-links"><a class="rma-gov-entity-tab is-active" href="' . esc_url($generate_url) . '">Gerar cobrança PIX</a>' . implode('', $generate_links) . '</div></div>';
             $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Área de pagamento</th><th>Conteúdo</th></tr></thead><tbody>';
             $html .= '<tr><td>QR Code PIX</td><td>' . ($pix_qr !== '' ? '<img src="' . esc_url($pix_qr) . '" alt="QR Code PIX" style="max-width:180px;height:auto" />' : 'Será exibido após geração da cobrança.') . '</td></tr>';
             $html .= '<tr><td>Código copia e cola</td><td>' . ($pix_payload !== '' ? '<code>' . esc_html($pix_payload) . '</code>' : 'Será exibido após geração da cobrança.') . '</td></tr>';
@@ -1830,7 +1830,7 @@ final class RMA_Governance {
                 }
             }
             $html .= '</tbody></table></div>';
-            $html .= '<div style="margin-top:10px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:10px"><strong>Linha do tempo:</strong> ';
+            $html .= '<div class="rma-fin-timeline"><strong>Linha do tempo:</strong> ';
             $timeline = [];
             foreach (array_slice($history, 0, 5) as $item) {
                 $timeline[] = esc_html((string) ($item['year'] ?? '-')) . ' ✔ ' . esc_html(strtoupper((string) ($item['finance_status'] ?? 'PAGO')));
@@ -1892,27 +1892,39 @@ final class RMA_Governance {
     private function render_entity_governance_styles(): string {
         return '<style>
             .rma-gov-entity-wrap,.rma-gov-entity-wrap *{font-family:"Maven Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-sizing:border-box}
-            .rma-gov-entity-wrap{background:linear-gradient(150deg,#fcfdff 0%,#f2f7ff 100%);border:1px solid rgba(255,255,255,.9);box-shadow:0 24px 60px rgba(15,23,42,.11);border-radius:24px;padding:22px;color:#162538}
-            .rma-gov-entity-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
-            .rma-gov-entity-tab{text-decoration:none;color:#17355c;background:#e9f1fb;border:1px solid #d4e2f2;padding:6px 11px;border-radius:999px;font-size:12px;font-weight:700}
-            .rma-gov-entity-tab.is-active{background:linear-gradient(135deg,#7bad39,#5ddabb);color:#fff;border-color:transparent;box-shadow:0 8px 18px rgba(93,218,187,.33)}
-            .rma-gov-entity-head{background:linear-gradient(135deg,#7bad39,#5ddabb);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:14px}
-            .rma-gov-entity-head h3{margin:0 0 4px;font-size:22px}
-            .rma-gov-entity-head p{margin:0;opacity:.95}
-            .rma-gov-entity-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
-            .rma-gov-entity-card{background:rgba(255,255,255,.92);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:11px}
-            .rma-gov-entity-card small{display:block;color:#5b6a7c;font-size:12px;margin-bottom:5px}
-            .rma-gov-entity-card strong{font-size:16px}
+            .rma-gov-entity-wrap{background:radial-gradient(circle at top right,#f7fffb 0,#eef4ff 46%,#f8fbff 100%);border:1px solid #dbe8f7;box-shadow:0 24px 60px rgba(15,23,42,.10);border-radius:24px;padding:24px;color:#162538}
+            .rma-gov-entity-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+            .rma-gov-entity-tab{text-decoration:none;color:#17416f;background:#fff;border:1px solid #d4e2f2;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;transition:all .2s ease}
+            .rma-gov-entity-tab:hover{transform:translateY(-1px);box-shadow:0 8px 16px rgba(21,89,214,.12)}
+            .rma-gov-entity-tab.is-active{background:linear-gradient(135deg,#2f80ed,#4cc9a7);color:#fff;border-color:transparent;box-shadow:0 10px 20px rgba(47,128,237,.28)}
+            .rma-gov-entity-head{background:linear-gradient(135deg,#19456f,#2f80ed 55%,#4cc9a7);color:#fff;border-radius:18px;padding:18px 20px;margin-bottom:16px;box-shadow:0 14px 34px rgba(24,69,111,.28)}
+            .rma-gov-entity-head h3{margin:0 0 6px;font-size:22px;line-height:1.2}
+            .rma-gov-entity-head p{margin:0;opacity:.94;font-size:14px}
+            .rma-gov-entity-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+            .rma-gov-entity-card{background:#fff;border:1px solid #dce8f5;border-radius:14px;padding:13px;box-shadow:0 10px 24px rgba(15,23,42,.06)}
+            .rma-gov-entity-card small{display:block;color:#607086;font-size:12px;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
+            .rma-gov-entity-card strong{font-size:16px;display:block;line-height:1.3}
+            .rma-fin-highlight{background:linear-gradient(180deg,#ffffff 0,#f8fcff 100%)}
+            .rma-fin-subline{display:block;margin-top:6px;color:#5f6f83;font-size:13px}
+            .rma-fin-chip{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-bottom:8px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid transparent}
+            .rma-fin-chip.is-success{background:rgba(15,159,111,.12);border-color:rgba(15,159,111,.28);color:#0f7b57}
+            .rma-fin-chip.is-danger{background:rgba(206,63,74,.12);border-color:rgba(206,63,74,.28);color:#b2303c}
+            .rma-fin-cta{margin:0 0 12px;background:#fff;border:1px solid #d7e6f6;border-radius:14px;padding:12px;display:grid;gap:8px}
+            .rma-fin-cta strong{font-size:15px;color:#12385e}
+            .rma-fin-cta span{color:#5f6f83;font-size:13px}
+            .rma-fin-links{display:flex;flex-wrap:wrap;gap:8px}
+            .rma-fin-link-pill{display:inline-flex;padding:6px 10px;border-radius:999px;background:#f3f8ff;border:1px solid #d4e3f6;font-size:12px;font-weight:700}
             .rma-badge{border-radius:999px;padding:4px 10px;font-size:12px;display:inline-flex;border:1px solid transparent}
             .rma-badge.aprovado{color:#0f9f6f;background:rgba(15,159,111,.12);border-color:rgba(15,159,111,.25)}
             .rma-badge.recusado{color:#ce3f4a;background:rgba(206,63,74,.12);border-color:rgba(206,63,74,.25)}
             .rma-badge.em_analise,.rma-badge.pendente{color:#d78d11;background:rgba(215,141,17,.12);border-color:rgba(215,141,17,.25)}
-            .rma-gov-entity-table-wrap{overflow:auto;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:12px}
+            .rma-gov-entity-table-wrap{overflow:auto;background:#fff;border:1px solid #dce8f5;border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,.05)}
             .rma-gov-entity-table{width:100%;border-collapse:collapse}
-            .rma-gov-entity-table th,.rma-gov-entity-table td{padding:11px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:13px}
-            .rma-gov-entity-table th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#5b6a7c}
-            .rma-gov-entity-link{color:#1559d6;text-decoration:none}
+            .rma-gov-entity-table th,.rma-gov-entity-table td{padding:12px;border-bottom:1px solid #e6eff8;text-align:left;font-size:13px}
+            .rma-gov-entity-table th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#5b6a7c;background:#f8fbff}
+            .rma-gov-entity-link{color:#1559d6;text-decoration:none;font-weight:700}
             .rma-gov-entity-link:hover{text-decoration:underline}
+            .rma-fin-timeline{margin-top:12px;background:#fff;border:1px solid #dce8f5;border-radius:14px;padding:12px;box-shadow:0 10px 24px rgba(15,23,42,.05)}
             .rma-gov-entity-alert{background:rgba(206,63,74,.09);border:1px solid rgba(206,63,74,.25);color:#b2303c;border-radius:10px;padding:10px;margin:0 0 12px}
         </style>';
     }
