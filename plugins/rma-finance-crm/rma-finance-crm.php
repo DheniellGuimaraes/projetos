@@ -833,9 +833,10 @@ final class RMA_Finance_CRM {
                 var navLink = supportToggle.closest('a.nav-link');
                 if (!navLink) { return false; }
 
-                var icon = navLink.querySelector('i.menu-icon, i');
+                var icon = navLink.querySelector('.menu-icon, i');
                 if (icon) {
-                    icon.className = 'mdi mdi-lifebuoy menu-icon';
+                    icon.className = 'menu-icon rma-support-icon';
+                    icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
                 }
 
                 var base = window.location.origin + window.location.pathname;
@@ -1097,12 +1098,31 @@ final class RMA_Finance_CRM {
                     }
                 }
 
+                var host = document.querySelector('.main-panel .content-wrapper,.main-content .content-wrapper,.main-content,.content-wrapper,.dashboard-content-area');
+                if ((!wrappers || wrappers.length === 0) && host && !document.getElementById('rma-smart-home-fallback')) {
+                    var fallback = document.createElement('section');
+                    fallback.id = 'rma-smart-home-fallback';
+                    fallback.style.margin = '10px 0 18px';
+                    fallback.innerHTML = '<div style="background:linear-gradient(135deg,rgba(123,173,57,.20),rgba(93,218,187,.18));border:1px solid rgba(125,160,190,.25);border-radius:16px;padding:14px 16px;margin:0 0 12px"><h3 style="margin:0 0 5px;color:#17324d">Painel Inteligente da Entidade</h3><p style="margin:0;color:#35556f">Indicadores estratégicos personalizados para governança, financeiro e suporte.</p></div>';
+                    var grid = document.createElement('div');
+                    grid.className = 'rma-glass-grid';
+                    glassCards.forEach(function(item){
+                        var link = document.createElement('a');
+                        link.className = 'rma-glass-card';
+                        link.href = item.url || '#';
+                        link.innerHTML = '<div class="rma-glass-icon">'+(item.icon || '✨')+'</div><p class="rma-glass-title">'+(item.title || '')+'</p><p class="rma-glass-value">'+(item.value || '0')+'</p><p class="rma-glass-desc">'+(item.desc || '')+'</p>';
+                        grid.appendChild(link);
+                    });
+                    fallback.appendChild(grid);
+                    host.insertAdjacentElement('afterbegin', fallback);
+                }
+
                 var breadcrumb = document.querySelector('.breadcrumb-item.active');
                 if (breadcrumb) {
                     breadcrumb.textContent = 'Painel de controle inteligente';
                 }
 
-                return (wrappers && wrappers.length > 0) || !!profileVisitsCard;
+                return (wrappers && wrappers.length > 0) || !!profileVisitsCard || !!document.getElementById('rma-smart-home-fallback');
             }
 
             var attempts = 0;
