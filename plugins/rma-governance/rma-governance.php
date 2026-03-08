@@ -1618,23 +1618,14 @@ final class RMA_Governance {
             'rma-governanca-upload' => '[rma_governanca_entidade_upload]',
         ];
 
-        $map['rma-financeiro-visao-geral'] = '[rma_financeiro_entidade_crm tab="visao-geral"]';
-        $map['rma-financeiro-cobranca'] = '[rma_financeiro_entidade_crm tab="cobranca"]';
-        $map['rma-financeiro-pix'] = '[rma_financeiro_entidade_crm tab="pix"]';
-        $map['rma-financeiro-historico'] = '[rma_financeiro_entidade_crm tab="historico"]';
-        $map['rma-financeiro-relatorios'] = '[rma_financeiro_entidade_crm tab="relatorios"]';
-        $map['saved-services'] = '[rma_financeiro_entidade_crm tab="suporte"]';
-        $map['rma-suporte'] = '[rma_financeiro_entidade_crm tab="suporte"]';
-        $map['rma-suporte-novo'] = '[rma_financeiro_entidade_crm tab="suporte"]';
-        $map['rma-suporte-tickets'] = '[rma_financeiro_entidade_crm tab="suporte"]';
-
-        if (! isset($map[$ext])) {
-            return;
-        }
-
-        $content = do_shortcode($map[$ext]);
-        if (strpos($content, '[rma_financeiro_entidade_crm') !== false) {
-            $content = '<div style="background:#fff;border:1px solid #dbe7f3;border-radius:12px;padding:14px"><h3 style="margin:0 0 8px">Financeiro da Entidade</h3><p style="margin:0;color:#475569">Não foi possível carregar o módulo financeiro neste momento. Verifique se o plugin <strong>RMA Finance CRM</strong> está ativo.</p></div>';
+        $finance_exts = ['rma-financeiro-visao-geral','rma-financeiro-cobranca','rma-financeiro-pix','rma-financeiro-historico','rma-financeiro-relatorios','saved-services','rma-suporte','rma-suporte-novo','rma-suporte-tickets'];
+        if (in_array($ext, $finance_exts, true)) {
+            $content = $this->render_entity_finance_support_bridge($ext);
+        } else {
+            if (! isset($map[$ext])) {
+                return;
+            }
+            $content = do_shortcode($map[$ext]);
         }
         ?>
         <script>
@@ -1667,6 +1658,58 @@ final class RMA_Governance {
         })();
         </script>
         <?php
+    }
+
+    private function render_entity_finance_support_bridge(string $ext): string {
+        $entity_id = $this->get_entity_id_by_author(get_current_user_id());
+        if ($entity_id <= 0) {
+            return '<div style="background:#fff;border:1px solid #dbe7f3;border-radius:12px;padding:14px">Nenhuma entidade vinculada.</div>';
+        }
+
+        $entity_name = (string) get_the_title($entity_id);
+        $finance_status = (string) get_post_meta($entity_id, 'finance_status', true);
+        $due_date = (string) get_post_meta($entity_id, 'anuidade_vencimento', true);
+        $due_date = $due_date !== '' ? wp_date('d/m/Y', strtotime($due_date)) : 'Não definido';
+
+        $history = get_post_meta($entity_id, 'finance_history', true);
+        $history = is_array($history) ? array_reverse($history) : [];
+        $tickets = get_post_meta($entity_id, 'rma_support_tickets', true);
+        $tickets = is_array($tickets) ? array_reverse($tickets) : [];
+
+        $rows = '';
+        if ($ext === 'rma-financeiro-historico' || $ext === 'rma-financeiro-relatorios') {
+            foreach (array_slice($history, 0, 15) as $item) {
+                $rows .= '<tr><td>' . esc_html(strtoupper((string) ($item['finance_status'] ?? '-'))) . '</td><td>' . esc_html((string) ($item['year'] ?? '-')) . '</td><td>' . esc_html((string) ($item['paid_at'] ?? '-')) . '</td></tr>';
+            }
+            if ($rows === '') {
+                $rows = '<tr><td colspan="3">Sem histórico financeiro disponível.</td></tr>';
+            }
+        } elseif ($ext === 'saved-services' || strpos($ext, 'rma-suporte') === 0) {
+            foreach (array_slice($tickets, 0, 15) as $t) {
+                $rows .= '<tr><td>' . esc_html((string) ($t['id'] ?? '-')) . '</td><td>' . esc_html(strtoupper((string) ($t['priority'] ?? 'media'))) . '</td><td>' . esc_html(strtoupper((string) ($t['status'] ?? 'aberto'))) . '</td></tr>';
+            }
+            if ($rows === '') {
+                $rows = '<tr><td colspan="3">Nenhum ticket de suporte aberto.</td></tr>';
+            }
+        } else {
+            $rows = '<tr><td>Status financeiro</td><td colspan="2">' . esc_html(strtoupper($finance_status !== '' ? $finance_status : 'inadimplente')) . '</td></tr>'
+                . '<tr><td>Vencimento</td><td colspan="2">' . esc_html($due_date) . '</td></tr>';
+        }
+
+        $title = 'Financeiro da Entidade';
+        if ($ext === 'saved-services' || strpos($ext, 'rma-suporte') === 0) {
+            $title = 'Suporte da Entidade';
+        }
+
+        return '<div class="rma-gov-entity-wrap">'
+            . '<div class="rma-gov-entity-head"><h3>' . esc_html($title) . '</h3><p>Conteúdo dedicado renderizado no fluxo do dashboard da entidade.</p></div>'
+            . '<div class="rma-gov-entity-meta">'
+            . '<div class="rma-gov-entity-card"><small>Entidade</small><strong>' . esc_html($entity_name) . '</strong></div>'
+            . '<div class="rma-gov-entity-card"><small>Status financeiro</small><strong>' . esc_html(strtoupper($finance_status !== '' ? $finance_status : 'inadimplente')) . '</strong></div>'
+            . '<div class="rma-gov-entity-card"><small>Vencimento</small><strong>' . esc_html($due_date) . '</strong></div>'
+            . '</div>'
+            . '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Item</th><th>Referência</th><th>Status/Data</th></tr></thead><tbody>' . $rows . '</tbody></table></div>'
+            . '</div>';
     }
 
     private function redirect_entity_dashboard_notice(string $message, string $type): void {
