@@ -20,6 +20,7 @@ final class RMA_Governance {
         add_action('wp_footer', [$this, 'inject_entity_dashboard_governance_menu'], 99);
         add_action('wp_footer', [$this, 'inject_entity_dashboard_governance_content'], 100);
         add_action('wp_footer', [$this, 'inject_entity_notifications_dropdown'], 101);
+        add_action('wp_footer', [$this, 'inject_entity_dashboard_home_index_cards'], 102);
 
         add_action('wp_ajax_rma_mark_entity_notifications_read', [$this, 'ajax_mark_entity_notifications_read']);
 
@@ -1588,11 +1589,173 @@ final class RMA_Governance {
                 var supportLink = supportToggle.closest('a.nav-link');
                 if (supportLink) {
                     supportLink.setAttribute('href', extUrl('saved-services'));
+                    var supportIcon = supportLink.querySelector('.menu-icon, i');
+                    if (supportIcon) {
+                        supportIcon.className = 'menu-icon rma-support-icon';
+                        supportIcon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+                    }
                     if (['saved-services','rma-suporte','rma-suporte-novo','rma-suporte-tickets'].indexOf(activeExt) !== -1) {
                         supportLink.classList.add('active');
                     }
                 }
             }
+        })();
+        </script>
+        <?php
+    }
+
+
+    public function inject_entity_dashboard_home_index_cards(): void {
+        if (is_admin() || ! is_user_logged_in()) {
+            return;
+        }
+
+        $ext = isset($_GET['ext']) ? sanitize_key((string) wp_unslash($_GET['ext'])) : '';
+        if ($ext !== '' && ! in_array($ext, ['dashboard', 'index'], true)) {
+            return;
+        }
+
+        $entity_id = $this->get_entity_id_by_author(get_current_user_id());
+        if ($entity_id <= 0) {
+            return;
+        }
+
+        $docs = get_post_meta($entity_id, 'entity_documents', true);
+        $docs = is_array($docs) ? $docs : [];
+        $documents_count = count($docs);
+
+        $gov_status = $this->normalized_governance_status($entity_id);
+        $gov_pending = $gov_status === 'aprovado' ? 0 : 1;
+
+        $finance_status = sanitize_key((string) get_post_meta($entity_id, 'finance_status', true));
+        if ($finance_status === '') {
+            $finance_status = 'inadimplente';
+        }
+        $finance_open = $finance_status === 'adimplente' ? 0 : 1;
+
+        $tickets = get_post_meta($entity_id, 'rma_support_tickets', true);
+        $tickets = is_array($tickets) ? $tickets : [];
+        $open_tickets = 0;
+        foreach ($tickets as $ticket) {
+            if (sanitize_key((string) ($ticket['status'] ?? 'aberto')) === 'aberto') {
+                $open_tickets++;
+            }
+        }
+
+        $due_raw = (string) get_post_meta($entity_id, 'anuidade_vencimento', true);
+        if ($due_raw === '') {
+            $due_raw = (string) get_post_meta($entity_id, 'finance_due_at', true);
+        }
+        $due_ts = $due_raw !== '' ? strtotime($due_raw . ' UTC') : false;
+        $due_badge = 'Sem vencimento definido';
+        if ($due_ts) {
+            $days = (int) floor(($due_ts - current_time('timestamp', true)) / DAY_IN_SECONDS);
+            if ($days < 0) {
+                $due_badge = 'Atrasado há ' . abs($days) . ' dia(s)';
+            } elseif ($days === 0) {
+                $due_badge = 'Vence hoje';
+            } else {
+                $due_badge = 'Vence em ' . $days . ' dia(s)';
+            }
+        }
+
+        $compliance = 0;
+        $compliance += $gov_pending === 0 ? 35 : 10;
+        $compliance += $finance_open === 0 ? 35 : 10;
+        $compliance += $documents_count > 0 ? 15 : 5;
+        $compliance += $open_tickets === 0 ? 15 : 5;
+
+        $cards = [
+            ['title' => 'Documentos enviados', 'value' => (string) $documents_count, 'url' => add_query_arg('ext', 'rma-governanca-documentos', home_url('/dashboard/'))],
+            ['title' => 'Pendências de governança', 'value' => (string) $gov_pending, 'url' => add_query_arg('ext', 'rma-governanca-pendencias', home_url('/dashboard/'))],
+            ['title' => 'Status financeiro', 'value' => $finance_open > 0 ? 'Pendente' : 'Em dia', 'url' => add_query_arg('ext', 'rma-financeiro-cobranca', home_url('/dashboard/'))],
+            ['title' => 'Tickets de suporte abertos', 'value' => (string) $open_tickets, 'url' => add_query_arg('ext', 'rma-suporte-tickets', home_url('/dashboard/'))],
+        ];
+
+        $glass_cards = [
+            ['icon' => '🧭', 'title' => 'Índice de conformidade', 'value' => $compliance . '%', 'desc' => 'Saúde geral da entidade no ciclo RMA.', 'url' => add_query_arg('ext', 'rma-governanca-status', home_url('/dashboard/'))],
+            ['icon' => '🗂️', 'title' => 'Dossiê documental', 'value' => (string) $documents_count, 'desc' => 'Arquivos enviados para análise.', 'url' => add_query_arg('ext', 'rma-governanca-documentos', home_url('/dashboard/'))],
+            ['icon' => '💚', 'title' => 'Situação financeira', 'value' => $finance_open > 0 ? 'Pendente' : 'Em dia', 'desc' => $due_badge, 'url' => add_query_arg('ext', 'rma-financeiro-cobranca', home_url('/dashboard/'))],
+            ['icon' => '🎫', 'title' => 'Canal de suporte', 'value' => (string) $open_tickets . ' aberto(s)', 'desc' => 'Acompanhe tickets com a Equipe RMA.', 'url' => add_query_arg('ext', 'rma-suporte-tickets', home_url('/dashboard/'))],
+        ];
+
+        ?>
+        <script>
+        (function(){
+            var cards = <?php echo wp_json_encode($cards); ?>;
+            var glassCards = <?php echo wp_json_encode($glass_cards); ?>;
+            var aliases = ['projetos publicados','projetos em destaque','projetos em andamento','projetos concluídos'];
+
+            function mount() {
+                var wrappers = Array.prototype.slice.call(document.querySelectorAll('.info-boxes .metric'));
+                if (!wrappers.length) {
+                    wrappers = Array.prototype.slice.call(document.querySelectorAll('.metric,.counter-box,.card')).filter(function(node){
+                        var txt = (node.textContent || '').toLowerCase();
+                        return aliases.some(function(a){ return txt.indexOf(a) !== -1; });
+                    });
+                }
+
+                if (wrappers.length) {
+                    wrappers.slice(0, cards.length).forEach(function(wrap, i){
+                        var item = cards[i] || {};
+                        var titleEl = wrap.querySelector('.title,.counter-title,h6,h5,h4');
+                        var numEl = wrap.querySelector('.number,.counter-value,strong,h3');
+                        var linkEl = wrap.querySelector('a');
+                        if (titleEl && item.title) { titleEl.textContent = item.title; }
+                        if (numEl && typeof item.value !== 'undefined') { numEl.textContent = String(item.value); }
+                        if (linkEl && item.url) { linkEl.setAttribute('href', item.url); }
+                    });
+                }
+
+                if (!document.getElementById('rma-entity-glass-cards-style')) {
+                    var style = document.createElement('style');
+                    style.id = 'rma-entity-glass-cards-style';
+                    style.textContent = '.rma-glass-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0 20px}.rma-glass-card{position:relative;display:block;padding:16px 16px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.35);background:linear-gradient(135deg,rgba(123,173,57,.28),rgba(93,218,187,.22) 55%,rgba(30,207,152,.22));box-shadow:0 14px 32px rgba(27,39,59,.14);backdrop-filter:blur(8px);text-decoration:none;color:#17324d;overflow:hidden}.rma-glass-card:before{content:"";position:absolute;inset:-45% auto auto -25%;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.45),rgba(255,255,255,0));pointer-events:none}.rma-glass-icon{font-size:20px;line-height:1;margin-bottom:10px}.rma-glass-title{margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#24445f}.rma-glass-value{margin:0 0 4px;font-size:24px;font-weight:800;color:#0f2740}.rma-glass-desc{margin:0;font-size:13px;line-height:1.35;color:#315670}';
+                    document.head.appendChild(style);
+                }
+
+                var host = document.querySelector('.info-boxes') || (wrappers[0] ? wrappers[0].closest('.row') : null) || document.querySelector('.main-panel .content-wrapper,.main-content .content-wrapper,.main-content,.content-wrapper,.dashboard-content-area');
+                if (host && !document.getElementById('rma-smart-home-fallback')) {
+                    var section = document.createElement('section');
+                    section.id = 'rma-smart-home-fallback';
+                    section.style.margin = '10px 0 18px';
+                    section.innerHTML = '<div style="background:linear-gradient(135deg,rgba(123,173,57,.20),rgba(93,218,187,.18));border:1px solid rgba(125,160,190,.25);border-radius:16px;padding:14px 16px;margin:0 0 12px"><h3 style="margin:0 0 5px;color:#17324d">Painel Inteligente da Entidade</h3><p style="margin:0;color:#35556f">Indicadores estratégicos personalizados para governança, financeiro e suporte.</p></div>';
+                    var grid = document.createElement('div');
+                    grid.id = 'rma-entity-glass-cards';
+                    grid.className = 'rma-glass-grid';
+                    glassCards.forEach(function(item){
+                        var link = document.createElement('a');
+                        link.className = 'rma-glass-card';
+                        link.href = item.url || '#';
+                        link.innerHTML = '<div class="rma-glass-icon">'+(item.icon || '✨')+'</div><p class="rma-glass-title">'+(item.title || '')+'</p><p class="rma-glass-value">'+(item.value || '0')+'</p><p class="rma-glass-desc">'+(item.desc || '')+'</p>';
+                        grid.appendChild(link);
+                    });
+                    section.appendChild(grid);
+                    host.insertAdjacentElement('afterend', section);
+                }
+
+                var profileCard = Array.prototype.slice.call(document.querySelectorAll('.card,.dashboard-card,.widget')).find(function(node){
+                    var h = node.querySelector('h2,h3,h4,.card-title');
+                    var t = (h ? h.textContent : node.textContent || '').toLowerCase();
+                    return t.indexOf('visualiza') !== -1 && t.indexOf('perfil') !== -1;
+                });
+                if (profileCard) {
+                    var row = profileCard.closest('.row');
+                    if (row) {
+                        Array.prototype.slice.call(row.children).forEach(function(col){
+                            if (!col.contains(profileCard)) { col.style.display = 'none'; }
+                            else { col.classList.remove('col-xl-8','col-lg-8','col-md-8','col-xl-9','col-lg-9','col-md-9'); col.classList.add('col-12'); }
+                        });
+                    }
+                }
+                return true;
+            }
+
+            var tries = 0;
+            var timer = setInterval(function(){
+                tries++;
+                if (mount() || tries > 20) { clearInterval(timer); }
+            }, 350);
         })();
         </script>
         <?php
