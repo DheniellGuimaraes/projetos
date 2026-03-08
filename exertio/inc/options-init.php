@@ -8959,7 +8959,7 @@ Redux::setSection($opt_name, array(
 			'id' => 'rma_map_directory_page_url',
 			'type' => 'text',
 			'title' => __('URL da página interna do Mapa de ONGs', 'exertio_theme'),
-			'subtitle' => __('Informe a página que contém o shortcode [rma_map_directory]. Este é o destino do menu Mapa de ONGs no dashboard.', 'exertio_theme'),
+			'subtitle' => __('Informe a página que contém o shortcode [rma_map_directory]. Use esta URL como referência para a página pública com o shortcode [rma_map_directory].', 'exertio_theme'),
 			'validate' => 'url',
 		),
 		array(
@@ -8974,7 +8974,6 @@ Redux::setSection($opt_name, array(
 				'Profile' => __('Minha Conta', 'exertio_theme'),
 				'Projects' => __('Documentos', 'exertio_theme'),
 				'Services' => __('Governança', 'exertio_theme'),
-				'RmaMapDirectory' => __('Mapa de ONGs', 'exertio_theme'),
 				'CustomOffers' => __('Financeiro', 'exertio_theme'),
 				'chat_dashboard' => __('Notificações', 'exertio_theme'),
 				'ChatDashboard' => __('Chat RMA', 'exertio_theme'),
@@ -12336,110 +12335,38 @@ if (!function_exists('rma_map_directory_shortcode')) {
 	add_shortcode('rma_map_directory', 'rma_map_directory_shortcode');
 }
 
-if (!function_exists('rma_map_dashboard_ext_targeted_content')) {
-	function rma_map_dashboard_ext_targeted_content()
+if (!function_exists('rma_map_register_admin_menu')) {
+	function rma_map_register_admin_menu()
 	{
-		if (!is_user_logged_in()) {
+		if (!current_user_can('manage_options')) {
 			return;
 		}
 
-		$ext = isset($_GET['ext']) ? sanitize_key(wp_unslash($_GET['ext'])) : '';
-		if ($ext !== 'rma-map-directory') {
-			return;
-		}
+		add_menu_page(
+			__('Mapa de ONGs', 'exertio_theme'),
+			__('Mapa de ONGs', 'exertio_theme'),
+			'manage_options',
+			'rma-mapa-ongs',
+			'rma_map_render_admin_page',
+			'dashicons-location-alt',
+			31
+		);
+	}
+	add_action('admin_menu', 'rma_map_register_admin_menu');
+}
 
-		$template_file = trailingslashit(get_template_directory()) . 'template-parts/dashboard/rma-map-directory.php';
-		if (!file_exists($template_file)) {
-			return;
+if (!function_exists('rma_map_render_admin_page')) {
+	function rma_map_render_admin_page()
+	{
+		if (!current_user_can('manage_options')) {
+			wp_die(esc_html__('Você não tem permissão para acessar esta página.', 'exertio_theme'));
 		}
-
-		ob_start();
-		include $template_file;
-		$dashboard_content_html = trim((string) ob_get_clean());
-		if ($dashboard_content_html === '') {
-			return;
-		}
-
-		$dashboard_content_html = preg_replace('/<h3[^>]*>\s*Mapa de ONGs\s*[—-]\s*Modo Turbo\s*<\/h3>/iu', '', $dashboard_content_html);
-		$dashboard_content_html = preg_replace('/<p[^>]*>\s*Experi[eê]ncia premium com dados focados exclusivamente no diret[óo]rio geogr[áa]fico das ONGs\.\s*<\/p>/iu', '', $dashboard_content_html);
-		$dashboard_content_html = preg_replace('/<div[^>]*class=["\']rma-map-intro["\'][^>]*>[\s\S]*?<\/div>/iu', '', $dashboard_content_html);
-		$dashboard_content_html = trim((string) $dashboard_content_html);
 		?>
-			<script>
-			(function(){
-				var injected = false;
-				var contentHtml = <?php echo wp_json_encode($dashboard_content_html); ?>;
-				var selectors = [
-					'.main-panel .content-wrapper',
-					'.main-content .content-wrapper',
-					'.main-content',
-					'.content-wrapper',
-					'.dashboard-content-area'
-				];
-
-				var inject = function(){
-					if (injected) {
-						return true;
-					}
-					var container = null;
-					for (var i = 0; i < selectors.length; i++) {
-						container = document.querySelector(selectors[i]);
-						if (container) {
-							break;
-						}
-					}
-					if (!container) {
-						return false;
-					}
-					container.innerHTML = contentHtml;
-					var scripts = container.querySelectorAll('script');
-					for (var si = 0; si < scripts.length; si++) {
-						var oldScript = scripts[si];
-						var newScript = document.createElement('script');
-						if (oldScript.src) {
-							newScript.src = oldScript.src;
-						}
-						if (oldScript.type) {
-							newScript.type = oldScript.type;
-						}
-						if (oldScript.noModule) {
-							newScript.noModule = true;
-						}
-						if (oldScript.defer) {
-							newScript.defer = true;
-						}
-						if (oldScript.async) {
-							newScript.async = true;
-						}
-						if (oldScript.textContent) {
-							newScript.text = oldScript.textContent;
-						}
-						oldScript.parentNode.replaceChild(newScript, oldScript);
-					}
-					injected = true;
-					return true;
-				};
-
-				var ensureInjected = function(){
-					if (inject()) {
-						return;
-					}
-					var retries = 0;
-					var timer = window.setInterval(function(){
-						retries++;
-						if (inject() || retries >= 20) {
-							window.clearInterval(timer);
-						}
-					}, 200);
-				};
-				if (document.readyState === 'loading') {
-					document.addEventListener('DOMContentLoaded', ensureInjected);
-				} else {
-					ensureInjected();
-				}
-			})();
-			</script>
+		<div class="wrap">
+			<h1><?php echo esc_html__('Mapa de ONGs', 'exertio_theme'); ?></h1>
+			<p><?php echo esc_html__('Visualização administrativa do diretório geográfico de entidades.', 'exertio_theme'); ?></p>
+			<?php echo do_shortcode('[rma_map_directory per_page=12]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		</div>
 		<?php
 	}
-	add_action('wp_footer', 'rma_map_dashboard_ext_targeted_content', 999);
 }
