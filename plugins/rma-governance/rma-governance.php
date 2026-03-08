@@ -1624,6 +1624,10 @@ final class RMA_Governance {
             $map['rma-financeiro-pix'] = '[rma_financeiro_entidade_crm tab="pix"]';
             $map['rma-financeiro-historico'] = '[rma_financeiro_entidade_crm tab="historico"]';
             $map['rma-financeiro-relatorios'] = '[rma_financeiro_entidade_crm tab="relatorios"]';
+            $map['saved-services'] = '[rma_financeiro_entidade_crm tab="suporte"]';
+            $map['rma-suporte'] = '[rma_financeiro_entidade_crm tab="suporte"]';
+            $map['rma-suporte-novo'] = '[rma_financeiro_entidade_crm tab="suporte"]';
+            $map['rma-suporte-tickets'] = '[rma_financeiro_entidade_crm tab="suporte"]';
         }
 
         if (! isset($map[$ext])) {
@@ -1636,13 +1640,29 @@ final class RMA_Governance {
         (function(){
             var html = <?php echo wp_json_encode($content); ?>;
             var selectors = ['.main-panel .content-wrapper','.main-content .content-wrapper','.main-content','.content-wrapper','.dashboard-content-area'];
-            var target = null;
-            for (var i=0;i<selectors.length;i++) {
-                target = document.querySelector(selectors[i]);
-                if (target) { break; }
+            var attempts = 0;
+
+            var mount = function(){
+                var target = null;
+                for (var i=0;i<selectors.length;i++) {
+                    target = document.querySelector(selectors[i]);
+                    if (target) { break; }
+                }
+                if (!target) {
+                    attempts++;
+                    if (attempts < 20) {
+                        window.setTimeout(mount, 120);
+                    }
+                    return;
+                }
+                target.innerHTML = html;
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', mount, { once: true });
+            } else {
+                mount();
             }
-            if (!target) { return; }
-            target.innerHTML = html;
         })();
         </script>
         <?php

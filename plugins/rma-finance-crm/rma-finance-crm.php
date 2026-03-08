@@ -620,7 +620,7 @@ final class RMA_Finance_CRM {
             $tab = 'visao-geral';
         }
 
-        $allowed_tabs = ['visao-geral', 'cobranca', 'pix', 'historico', 'relatorios'];
+        $allowed_tabs = ['visao-geral', 'cobranca', 'pix', 'historico', 'relatorios', 'suporte'];
         if (! in_array($tab, $allowed_tabs, true)) {
             $tab = 'visao-geral';
         }
@@ -689,6 +689,8 @@ final class RMA_Finance_CRM {
             echo $this->build_table('Meu PIX', $pix_rows, ['Pedido', 'Status', 'Total', 'Ano']);
         } elseif ($tab === 'historico') {
             echo $this->build_table('Histórico da sua entidade', $history, ['Status', 'Valor', 'Ano', 'Pedido', 'Data']);
+        } elseif ($tab === 'suporte') {
+            return $this->render_entity_support_panel();
         } else {
             echo $this->build_kpi_cards([
                 ['label' => 'Eventos auditáveis', 'value' => (string) count($audit_rows), 'tone' => 'neutral'],
