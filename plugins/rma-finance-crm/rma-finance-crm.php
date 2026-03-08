@@ -17,8 +17,9 @@ final class RMA_Finance_CRM {
         add_action('admin_menu', [$this, 'register_admin_menus']);
         add_shortcode('rma_financeiro_entidade_crm', [$this, 'render_entity_shortcode']);
         add_shortcode('rma_financeiro_admin_crm', [$this, 'render_admin_shortcode']);
-        add_action('wp_footer', [$this, 'inject_entity_dashboard_finance_menu'], 90);
-        add_action('wp_footer', [$this, 'inject_entity_dashboard_finance_content'], 95);
+        add_action('wp_footer', [$this, 'inject_entity_dashboard_documents_menu'], 102);
+        add_action('wp_footer', [$this, 'inject_entity_dashboard_finance_menu'], 103);
+        add_action('wp_footer', [$this, 'inject_entity_dashboard_finance_content'], 104);
     }
 
     public function register_admin_menus(): void {
@@ -698,6 +699,45 @@ final class RMA_Finance_CRM {
         return (string) ob_get_clean();
     }
 
+    public function inject_entity_dashboard_documents_menu(): void {
+        if (is_admin() || ! is_user_logged_in()) {
+            return;
+        }
+        ?>
+        <script>
+        (function(){
+            var docsToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
+                return (node.textContent || '').trim().toLowerCase() === 'documentos';
+            });
+            if (!docsToggle) { return; }
+
+            var navLink = docsToggle.closest('a.nav-link');
+            if (!navLink) { return; }
+
+            var collapseId = navLink.getAttribute('href');
+            if (!collapseId || collapseId.charAt(0) !== '#') { return; }
+            var collapse = document.querySelector(collapseId);
+            if (!collapse) { return; }
+
+            var base = window.location.origin + window.location.pathname;
+            var url = new URL(window.location.href);
+            var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
+            var linkClass = function(ext){ return 'nav-link' + (activeExt === ext ? ' active' : ''); };
+
+            collapse.innerHTML = [
+                '<ul class="nav flex-column sub-menu">',
+                '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+base+'?ext=rma-governanca-documentos">Documentos Enviados</a></li>',
+                '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+base+'?ext=rma-governanca-pendencias">Pendências</a></li>',
+                '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+base+'?ext=rma-governanca-status">Status</a></li>',
+                '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+base+'?ext=rma-governanca-upload">Enviar Documentos</a></li>',
+                '</ul>'
+            ].join('');
+        })();
+        </script>
+        <?php
+    }
+
+
     public function inject_entity_dashboard_finance_menu(): void {
         if (is_admin() || ! is_user_logged_in()) {
             return;
@@ -706,7 +746,8 @@ final class RMA_Finance_CRM {
         <script>
         (function(){
             var financeToggle = Array.prototype.slice.call(document.querySelectorAll('.menu-title')).find(function(node){
-                return (node.textContent || '').trim().toLowerCase() === 'financeiro';
+                var txt = (node.textContent || '').trim().toLowerCase();
+                return txt === 'financeiro';
             });
             if (!financeToggle) { return; }
 
