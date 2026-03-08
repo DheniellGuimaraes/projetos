@@ -1525,9 +1525,13 @@ final class RMA_Governance {
                 }) || null;
             };
 
-            var base = window.location.origin + window.location.pathname;
-            var url = new URL(window.location.href);
-            var activeExt = (url.searchParams.get('ext') || '').toLowerCase();
+            var currentUrl = new URL(window.location.href);
+            var activeExt = (currentUrl.searchParams.get('ext') || '').toLowerCase();
+            var extUrl = function(ext){
+                var u = new URL(currentUrl.toString());
+                u.searchParams.set('ext', ext);
+                return u.toString();
+            };
             var linkClass = function(ext){ return 'nav-link' + (activeExt === ext ? ' active' : ''); };
 
             var mountSubmenu = function(toggleNode, exts, html){
@@ -1551,10 +1555,10 @@ final class RMA_Governance {
                 ['rma-governanca-documentos','rma-governanca-pendencias','rma-governanca-status','rma-governanca-upload'],
                 [
                     '<ul class="nav flex-column sub-menu">',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+base+'?ext=rma-governanca-documentos">Documentos Enviados</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+base+'?ext=rma-governanca-pendencias">Pendências</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+base+'?ext=rma-governanca-status">Status</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+base+'?ext=rma-governanca-upload">Enviar Documentos</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+extUrl('rma-governanca-documentos')+'">Documentos Enviados</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+extUrl('rma-governanca-pendencias')+'">Pendências</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+extUrl('rma-governanca-status')+'">Status</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+extUrl('rma-governanca-upload')+'">Enviar Documentos</a></li>',
                     '</ul>'
                 ].join('')
             );
@@ -1564,10 +1568,10 @@ final class RMA_Governance {
                 ['rma-governanca-documentos','rma-governanca-pendencias','rma-governanca-status','rma-governanca-upload'],
                 [
                     '<ul class="nav flex-column sub-menu">',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+base+'?ext=rma-governanca-documentos">Documentos Enviados</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+base+'?ext=rma-governanca-pendencias">Pendências</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+base+'?ext=rma-governanca-status">Status</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+base+'?ext=rma-governanca-upload">Enviar Documentos</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+extUrl('rma-governanca-documentos')+'">Documentos Enviados</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+extUrl('rma-governanca-pendencias')+'">Pendências</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+extUrl('rma-governanca-status')+'">Status</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+extUrl('rma-governanca-upload')+'">Enviar Documentos</a></li>',
                     '</ul>'
                 ].join('')
             );
@@ -1577,11 +1581,11 @@ final class RMA_Governance {
                 ['rma-financeiro-visao-geral','rma-financeiro-cobranca','rma-financeiro-pix','rma-financeiro-historico','rma-financeiro-relatorios'],
                 [
                     '<ul class="nav flex-column sub-menu">',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-visao-geral')+'" href="'+base+'?ext=rma-financeiro-visao-geral">Visão Geral</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-cobranca')+'" href="'+base+'?ext=rma-financeiro-cobranca">Minha Cobrança</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-pix')+'" href="'+base+'?ext=rma-financeiro-pix">Meu PIX</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-historico')+'" href="'+base+'?ext=rma-financeiro-historico">Histórico</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-relatorios')+'" href="'+base+'?ext=rma-financeiro-relatorios">Relatórios</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-visao-geral')+'" href="'+extUrl('rma-financeiro-visao-geral')+'">Visão Geral</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-cobranca')+'" href="'+extUrl('rma-financeiro-cobranca')+'">Minha Cobrança</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-pix')+'" href="'+extUrl('rma-financeiro-pix')+'">Meu PIX</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-historico')+'" href="'+extUrl('rma-financeiro-historico')+'">Histórico</a></li>',
+                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-relatorios')+'" href="'+extUrl('rma-financeiro-relatorios')+'">Relatórios</a></li>',
                     '</ul>'
                 ].join('')
             );
@@ -1590,7 +1594,7 @@ final class RMA_Governance {
             if (supportToggle) {
                 var supportLink = supportToggle.closest('a.nav-link');
                 if (supportLink) {
-                    supportLink.setAttribute('href', base + '?ext=saved-services');
+                    supportLink.setAttribute('href', extUrl('saved-services'));
                     if (['saved-services','rma-suporte','rma-suporte-novo','rma-suporte-tickets'].indexOf(activeExt) !== -1) {
                         supportLink.classList.add('active');
                     }
