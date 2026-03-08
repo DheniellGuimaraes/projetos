@@ -1551,19 +1551,6 @@ final class RMA_Governance {
             };
 
             mountSubmenu(
-                findToggle('documentos'),
-                ['rma-governanca-documentos','rma-governanca-pendencias','rma-governanca-status','rma-governanca-upload'],
-                [
-                    '<ul class="nav flex-column sub-menu">',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-documentos')+'" href="'+extUrl('rma-governanca-documentos')+'">Documentos Enviados</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-pendencias')+'" href="'+extUrl('rma-governanca-pendencias')+'">Pendências</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-status')+'" href="'+extUrl('rma-governanca-status')+'">Status</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-governanca-upload')+'" href="'+extUrl('rma-governanca-upload')+'">Enviar Documentos</a></li>',
-                    '</ul>'
-                ].join('')
-            );
-
-            mountSubmenu(
                 findToggle('governança') || findToggle('governanca'),
                 ['rma-governanca-documentos','rma-governanca-pendencias','rma-governanca-status','rma-governanca-upload'],
                 [
@@ -1587,6 +1574,14 @@ final class RMA_Governance {
                     '</ul>'
                 ].join('')
             );
+
+            var documentsToggle = findToggle('documentos');
+            if (documentsToggle) {
+                var documentsItem = documentsToggle.closest('li.nav-item');
+                if (documentsItem) {
+                    documentsItem.style.display = 'none';
+                }
+            }
 
             var supportToggle = findToggle('suporte');
             if (supportToggle) {
@@ -1685,7 +1680,25 @@ final class RMA_Governance {
 
         $history = get_post_meta($entity_id, 'finance_history', true);
         $history = is_array($history) ? array_reverse($history) : [];
-        $last_payment = $history[0] ?? null;
+        $history_display = [];
+        $seen_history = [];
+        foreach ($history as $item) {
+            $year_key = sanitize_text_field((string) ($item['year'] ?? ''));
+            $signature = $year_key !== ''
+                ? 'year:' . $year_key
+                : md5(wp_json_encode([
+                    (string) ($item['paid_at'] ?? ''),
+                    (string) ($item['finance_status'] ?? ''),
+                    (string) ($item['total'] ?? ''),
+                    (string) ($item['order_id'] ?? ''),
+                ]));
+            if (isset($seen_history[$signature])) {
+                continue;
+            }
+            $seen_history[$signature] = true;
+            $history_display[] = $item;
+        }
+        $last_payment = $history_display[0] ?? null;
 
         $latest_order = null;
         if (function_exists('wc_get_orders')) {
@@ -1766,13 +1779,11 @@ final class RMA_Governance {
             $html .= '</div>';
             $html .= '<div class="rma-fin-cta"><strong>Gerar cobrança</strong><span>Escolha quantas anuidades deseja pagar agora e siga para o checkout.</span><div class="rma-fin-links">' . implode('', $generate_links) . '</div></div>';
             $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Situação da entidade</th><th>Status</th></tr></thead><tbody>';
-            $html .= '<tr><td>Participação na rede</td><td>✔ Ativa</td></tr><tr><td>Visibilidade no mapa</td><td>✔ Habilitada</td></tr><tr><td>Direito a voto em assembleias</td><td>' . ($finance_status === 'adimplente' ? '✔ Habilitado' : '⚠ Pode sofrer restrições') . '</td></tr>';
+            $html .= '<tr><td>Participação na rede</td><td>✔ Ativa</td></tr><tr><td>Visibilidade no mapa</td><td>✔ Habilitada</td></tr>';
             if ($finance_status !== 'adimplente') {
                 $html .= '<tr><td>Situação institucional</td><td>⚠ Entidades inadimplentes podem ter restrições institucionais.</td></tr>';
             }
-            if (empty($alerts)) {
-                $html .= '<tr><td>Alertas automáticos</td><td>Sem alertas críticos no momento.</td></tr>';
-            } else {
+            if (! empty($alerts)) {
                 foreach ($alerts as $alert) {
                     $html .= '<tr><td>Alerta automático</td><td>' . esc_html($alert) . '</td></tr>';
                 }
@@ -1808,15 +1819,14 @@ final class RMA_Governance {
             $html .= '<tr><td>QR Code PIX</td><td>' . ($pix_qr !== '' ? '<img src="' . esc_url($pix_qr) . '" alt="QR Code PIX" style="max-width:180px;height:auto" />' : 'Será exibido após geração da cobrança.') . '</td></tr>';
             $html .= '<tr><td>Código copia e cola</td><td>' . ($pix_payload !== '' ? '<code>' . esc_html($pix_payload) . '</code>' : 'Será exibido após geração da cobrança.') . '</td></tr>';
             $html .= '<tr><td>Instruções</td><td>Após o pagamento a confirmação é automática e pode levar alguns minutos.</td></tr>';
-            $html .= '<tr><td>Verificação manual</td><td><a class="rma-gov-entity-link" href="' . esc_url(add_query_arg(['ext' => 'rma-financeiro-cobranca', 'recheck' => '1'], $base)) . '">Já paguei</a></td></tr>';
             $html .= '</tbody></table></div>';
         } elseif ($ext === 'rma-financeiro-historico' || $ext === 'rma-financeiro-relatorios') {
             $html .= '<div class="rma-gov-entity-head"><h3>Histórico Financeiro</h3><p>Todos os pagamentos realizados pela entidade.</p></div>';
             $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Ano</th><th>Valor</th><th>Status</th><th>Data pagamento</th><th>Forma</th><th>Comprovante</th></tr></thead><tbody>';
-            if (empty($history)) {
+            if (empty($history_display)) {
                 $html .= '<tr><td colspan="6">Sem histórico financeiro disponível.</td></tr>';
             } else {
-                foreach (array_slice($history, 0, 20) as $item) {
+                foreach (array_slice($history_display, 0, 20) as $item) {
                     $total = 'R$ ' . number_format((float) ($item['total'] ?? 0), 2, ',', '.');
                     $order_id = (int) ($item['order_id'] ?? 0);
                     $receipt_url = '#';
@@ -1832,7 +1842,7 @@ final class RMA_Governance {
             $html .= '</tbody></table></div>';
             $html .= '<div class="rma-fin-timeline"><strong>Linha do tempo:</strong> ';
             $timeline = [];
-            foreach (array_slice($history, 0, 5) as $item) {
+            foreach (array_slice($history_display, 0, 5) as $item) {
                 $timeline[] = esc_html((string) ($item['year'] ?? '-')) . ' ✔ ' . esc_html(strtoupper((string) ($item['finance_status'] ?? 'PAGO')));
             }
             $html .= implode(' · ', $timeline ?: ['Sem registros']);
@@ -1896,8 +1906,8 @@ final class RMA_Governance {
             .rma-gov-entity-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
             .rma-gov-entity-tab{text-decoration:none;color:#17416f;background:#fff;border:1px solid #d4e2f2;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;transition:all .2s ease}
             .rma-gov-entity-tab:hover{transform:translateY(-1px);box-shadow:0 8px 16px rgba(21,89,214,.12)}
-            .rma-gov-entity-tab.is-active{background:linear-gradient(135deg,#2f80ed,#4cc9a7);color:#fff;border-color:transparent;box-shadow:0 10px 20px rgba(47,128,237,.28)}
-            .rma-gov-entity-head{background:linear-gradient(135deg,#19456f,#2f80ed 55%,#4cc9a7);color:#fff;border-radius:18px;padding:18px 20px;margin-bottom:16px;box-shadow:0 14px 34px rgba(24,69,111,.28)}
+            .rma-gov-entity-tab.is-active{background:linear-gradient(135deg,#50e9a4,#9dc26b 55%,#50e9a4);color:#fff;border-color:transparent;box-shadow:0 10px 20px rgba(80,233,164,.30)}
+            .rma-gov-entity-head{background:linear-gradient(135deg,#50e9a4,#9dc26b 55%,#50e9a4);color:#fff;border-radius:18px;padding:18px 20px;margin-bottom:16px;box-shadow:0 14px 34px rgba(80,233,164,.30)}
             .rma-gov-entity-head h3{margin:0 0 6px;font-size:22px;line-height:1.2}
             .rma-gov-entity-head p{margin:0;opacity:.94;font-size:14px}
             .rma-gov-entity-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
