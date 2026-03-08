@@ -23,6 +23,7 @@ final class RMA_Finance_CRM {
         add_action('wp_footer', [$this, 'inject_entity_dashboard_support_menu'], 104);
         add_action('wp_footer', [$this, 'inject_entity_dashboard_finance_content'], 105);
         add_action('wp_footer', [$this, 'inject_entity_dashboard_support_content'], 106);
+        add_action('wp_footer', [$this, 'inject_entity_dashboard_home_modules'], 107);
     }
 
     public function register_admin_menus(): void {
@@ -857,6 +858,89 @@ final class RMA_Finance_CRM {
         <?php
     }
 
+
+    public function inject_entity_dashboard_home_modules(): void {
+        if (is_admin() || ! is_user_logged_in()) {
+            return;
+        }
+
+        $ext = isset($_GET['ext']) ? sanitize_key((string) wp_unslash($_GET['ext'])) : '';
+        if ($ext !== '' && ! in_array($ext, ['dashboard', 'index'], true)) {
+            return;
+        }
+
+        $entity_id = $this->get_entity_id_by_user(get_current_user_id());
+        if ($entity_id <= 0) {
+            return;
+        }
+
+        $entity = $this->build_entity_finance_row($entity_id);
+        $docs = get_post_meta($entity_id, 'entity_documents', true);
+        $docs = is_array($docs) ? $docs : [];
+        $documents_count = count($docs);
+
+        $governance_status = sanitize_key((string) get_post_meta($entity_id, 'governance_status', true));
+        $governance_pending = $governance_status === 'aprovado' ? 0 : 1;
+
+        $finance_open = ($entity['finance_status'] ?? 'inadimplente') === 'adimplente' ? 0 : 1;
+
+        $tickets = get_post_meta($entity_id, 'rma_support_tickets', true);
+        $tickets = is_array($tickets) ? $tickets : [];
+        $open_tickets = 0;
+        foreach ($tickets as $ticket) {
+            if (sanitize_key((string) ($ticket['status'] ?? 'aberto')) === 'aberto') {
+                $open_tickets++;
+            }
+        }
+
+        $cards = [
+            [
+                'title' => 'Documentos enviados',
+                'value' => (string) $documents_count,
+                'url' => add_query_arg('ext', 'rma-governanca-documentos', home_url('/dashboard/')),
+            ],
+            [
+                'title' => 'Pendências de governança',
+                'value' => (string) $governance_pending,
+                'url' => add_query_arg('ext', 'rma-governanca-pendencias', home_url('/dashboard/')),
+            ],
+            [
+                'title' => 'Pendências financeiras',
+                'value' => (string) $finance_open,
+                'url' => add_query_arg('ext', 'rma-financeiro-cobranca', home_url('/dashboard/')),
+            ],
+            [
+                'title' => 'Tickets de suporte abertos',
+                'value' => (string) $open_tickets,
+                'url' => add_query_arg('ext', 'rma-suporte-tickets', home_url('/dashboard/')),
+            ],
+        ];
+
+        ?>
+        <script>
+        (function(){
+            var cards = <?php echo wp_json_encode($cards); ?>;
+            var wrappers = document.querySelectorAll('.info-boxes .metric');
+            if (!wrappers || wrappers.length === 0) { return; }
+
+            for (var i = 0; i < wrappers.length && i < cards.length; i++) {
+                var item = cards[i] || {};
+                var titleEl = wrappers[i].querySelector('.title');
+                var numEl = wrappers[i].querySelector('.number');
+                var linkEl = wrappers[i].querySelector('a');
+                if (titleEl && item.title) { titleEl.textContent = item.title; }
+                if (numEl && typeof item.value !== 'undefined') { numEl.textContent = String(item.value); }
+                if (linkEl && item.url) { linkEl.setAttribute('href', item.url); }
+            }
+
+            var breadcrumb = document.querySelector('.breadcrumb-item.active');
+            if (breadcrumb) {
+                breadcrumb.textContent = 'Painel de controle inteligente';
+            }
+        })();
+        </script>
+        <?php
+    }
 
     public function inject_entity_dashboard_support_content(): void {
         if (is_admin() || ! is_user_logged_in()) {
