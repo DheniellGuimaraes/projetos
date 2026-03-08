@@ -1584,7 +1584,6 @@ final class RMA_Governance {
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-visao-geral')+'" href="'+extUrl('rma-financeiro-visao-geral')+'">Visão Geral</a></li>',
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-cobranca')+'" href="'+extUrl('rma-financeiro-cobranca')+'">Minha Cobrança</a></li>',
                     '<li class="nav-item"><a class="'+linkClass('rma-financeiro-historico')+'" href="'+extUrl('rma-financeiro-historico')+'">Histórico</a></li>',
-                    '<li class="nav-item"><a class="'+linkClass('rma-financeiro-relatorios')+'" href="'+extUrl('rma-financeiro-relatorios')+'">Relatórios</a></li>',
                     '</ul>'
                 ].join('')
             );
@@ -1668,7 +1667,6 @@ final class RMA_Governance {
         $ext = $ext === 'rma-financeiro-pix' ? 'rma-financeiro-cobranca' : $ext;
         $entity_name = (string) get_the_title($entity_id);
         $finance_status = sanitize_key((string) get_post_meta($entity_id, 'finance_status', true));
-        $status_label = $finance_status === 'adimplente' ? '🟢 Adimplente' : '🔴 Inadimplente';
 
         $due_raw = (string) get_post_meta($entity_id, 'anuidade_vencimento', true);
         if ($due_raw === '') {
@@ -1678,8 +1676,12 @@ final class RMA_Governance {
         $due_date = $due_ts ? wp_date('d/m/Y', $due_ts) : 'Não definido';
         $days_left = $due_ts ? (int) floor(($due_ts - time()) / DAY_IN_SECONDS) : 0;
 
+        $status_label = $finance_status === 'adimplente' ? '🟢 Adimplente até ' . $due_date : '🔴 Anuidade vencida';
+        $status_hint = $finance_status === 'adimplente' ? 'Filiação ativa e regular.' : 'Regularize para manter sua filiação ativa.';
+
         $annual_value = (float) get_option('rma_annual_due_value', '0');
         $annual_value_label = 'R$ ' . number_format($annual_value, 2, ',', '.');
+        $annual_year = $due_ts ? (int) gmdate('Y', $due_ts) : ((int) gmdate('Y') + 1);
 
         $history = get_post_meta($entity_id, 'finance_history', true);
         $history = is_array($history) ? array_reverse($history) : [];
@@ -1745,17 +1747,28 @@ final class RMA_Governance {
         $html .= '</div>';
 
         if ($ext === 'rma-financeiro-visao-geral') {
+            $checkout_url = home_url('/checkout/');
+            $product_id = (int) get_option('rma_annual_dues_product_id', 0);
+            $generate_links = [];
+            for ($qty = 1; $qty <= 3; $qty++) {
+                $label = $qty . ' anuidade' . ($qty > 1 ? 's' : '');
+                $link = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => $qty], $checkout_url) : $checkout_url;
+                $generate_links[] = '<a class="rma-gov-entity-link" href="' . esc_url($link) . '">' . esc_html($label) . '</a>';
+            }
             $html .= '<div class="rma-gov-entity-head"><h3>Dashboard Financeiro</h3><p>Estou em dia? Quanto devo? O que preciso fazer agora?</p></div>';
             $html .= '<div class="rma-gov-entity-meta">';
-            $html .= '<div class="rma-gov-entity-card"><small>Status da filiação</small><strong>' . esc_html($status_label . ' até ' . $due_date) . '</strong></div>';
-            $html .= '<div class="rma-gov-entity-card"><small>Próximo vencimento</small><strong>' . esc_html($due_date) . ' · ' . esc_html((string) max(0, $days_left)) . ' dias</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Status da filiação</small><strong>' . esc_html($status_label) . '</strong><span style="display:block;margin-top:4px">' . esc_html($status_hint) . '</span></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Próximo vencimento</small><strong>' . esc_html($due_date) . '</strong><span style="display:block;margin-top:4px">Dias restantes: ' . esc_html((string) max(0, $days_left)) . '</span></div>';
             $last_label = $last_payment ? ('Ano: ' . (string) ($last_payment['year'] ?? '-') . ' · Data: ' . (string) ($last_payment['paid_at'] ?? '-') . ' · Forma: PIX') : 'Sem pagamento confirmado';
             $html .= '<div class="rma-gov-entity-card"><small>Último pagamento</small><strong>' . esc_html($last_label) . '</strong></div>';
-            $html .= '<div class="rma-gov-entity-card"><small>Anuidade atual</small><strong>' . esc_html('Anuidade RMA ' . gmdate('Y') . ' · ' . $annual_value_label) . '</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Valor da anuidade atual</small><strong>' . esc_html('Anuidade RMA ' . (string) $annual_year . ' · ' . $annual_value_label) . '</strong></div>';
             $html .= '</div>';
-            $html .= '<p style="margin:0 0 10px"><a class="rma-gov-entity-tab is-active" href="' . esc_url(add_query_arg('ext', 'rma-financeiro-cobranca', $base)) . '">Gerar cobrança</a></p>';
+            $html .= '<div style="margin:0 0 10px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:10px"><strong>Gerar cobrança:</strong> escolha quantas anuidades deseja pagar agora. ' . implode(' · ', $generate_links) . '</div>';
             $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Situação da entidade</th><th>Status</th></tr></thead><tbody>';
             $html .= '<tr><td>Participação na rede</td><td>✔ Ativa</td></tr><tr><td>Visibilidade no mapa</td><td>✔ Habilitada</td></tr><tr><td>Direito a voto em assembleias</td><td>' . ($finance_status === 'adimplente' ? '✔ Habilitado' : '⚠ Pode sofrer restrições') . '</td></tr>';
+            if ($finance_status !== 'adimplente') {
+                $html .= '<tr><td>Situação institucional</td><td>⚠ Entidades inadimplentes podem ter restrições institucionais.</td></tr>';
+            }
             if (empty($alerts)) {
                 $html .= '<tr><td>Alertas automáticos</td><td>Sem alertas críticos no momento.</td></tr>';
             } else {
@@ -1768,6 +1781,12 @@ final class RMA_Governance {
             $checkout_url = home_url('/checkout/');
             $product_id = (int) get_option('rma_annual_dues_product_id', 0);
             $generate_url = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => 1], $checkout_url) : $checkout_url;
+            $generate_links = [];
+            for ($qty = 1; $qty <= 3; $qty++) {
+                $label = 'Gerar ' . $qty . ' anuidade' . ($qty > 1 ? 's' : '');
+                $link = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => $qty], $checkout_url) : $checkout_url;
+                $generate_links[] = '<a class="rma-gov-entity-link" href="' . esc_url($link) . '">' . esc_html($label) . '</a>';
+            }
             $status_human = [
                 'nao_gerada' => 'Não gerada',
                 'pending' => 'Aguardando pagamento',
@@ -1779,11 +1798,12 @@ final class RMA_Governance {
             ];
             $html .= '<div class="rma-gov-entity-head"><h3>Minha Cobrança</h3><p>Gere e pague sua anuidade com PIX.</p></div>';
             $html .= '<div class="rma-gov-entity-meta">';
-            $html .= '<div class="rma-gov-entity-card"><small>Cobrança atual</small><strong>Anuidade ' . esc_html(gmdate('Y')) . ' · ' . esc_html($order_total) . '</strong></div>';
+            $html .= '<div class="rma-gov-entity-card"><small>Cobrança atual</small><strong>Anuidade ' . esc_html((string) $annual_year) . ' · ' . esc_html($order_total) . '</strong></div>';
             $html .= '<div class="rma-gov-entity-card"><small>Vencimento</small><strong>' . esc_html($due_date) . '</strong></div>';
             $html .= '<div class="rma-gov-entity-card"><small>Status</small><strong>' . esc_html($status_human[$order_status] ?? strtoupper($order_status)) . '</strong></div>';
             $html .= '</div>';
             $html .= '<p style="margin:0 0 10px"><a class="rma-gov-entity-tab is-active" href="' . esc_url($generate_url) . '">Gerar cobrança PIX</a></p>';
+            $html .= '<p style="margin:0 0 10px">' . implode(' · ', $generate_links) . '</p>';
             $html .= '<div class="rma-gov-entity-table-wrap"><table class="rma-gov-entity-table"><thead><tr><th>Área de pagamento</th><th>Conteúdo</th></tr></thead><tbody>';
             $html .= '<tr><td>QR Code PIX</td><td>' . ($pix_qr !== '' ? '<img src="' . esc_url($pix_qr) . '" alt="QR Code PIX" style="max-width:180px;height:auto" />' : 'Será exibido após geração da cobrança.') . '</td></tr>';
             $html .= '<tr><td>Código copia e cola</td><td>' . ($pix_payload !== '' ? '<code>' . esc_html($pix_payload) . '</code>' : 'Será exibido após geração da cobrança.') . '</td></tr>';
