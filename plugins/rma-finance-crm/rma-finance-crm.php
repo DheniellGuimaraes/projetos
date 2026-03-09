@@ -836,7 +836,7 @@ final class RMA_Finance_CRM {
                 var icon = navLink.querySelector('.menu-icon, i');
                 if (icon) {
                     icon.className = 'menu-icon rma-support-icon';
-                    icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+                    icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M4 6.5C4 5.67 4.67 5 5.5 5h13c.83 0 1.5.67 1.5 1.5v8c0 .83-.67 1.5-1.5 1.5H9l-4.2 3.1c-.33.24-.8.01-.8-.4V16.5C4 15.67 4.67 15 5.5 15" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
                 }
 
                 var base = window.location.origin + window.location.pathname;
@@ -914,6 +914,10 @@ final class RMA_Finance_CRM {
 
     public function inject_entity_dashboard_home_modules(): void {
         if (is_admin() || ! is_user_logged_in()) {
+            return;
+        }
+
+        if (class_exists('RMA_Governance')) {
             return;
         }
 
