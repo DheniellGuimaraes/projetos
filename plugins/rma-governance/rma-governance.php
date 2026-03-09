@@ -1652,32 +1652,40 @@ final class RMA_Governance {
         $analytics_cards = [
             ['title' => 'Usuários online', 'value' => '2', 'bg' => 'linear-gradient(135deg,#FF007A 0%,#FF5E5B 45%,#FFB347 100%)', 'tone' => 'dark'],
             ['title' => 'Exibições hoje', 'value' => '185', 'bg' => 'linear-gradient(135deg,#00F5D4 0%,#00BBF9 48%,#4361EE 100%)', 'tone' => 'dark'],
-            ['title' => 'Visitas nos últimos 15 dias', 'value' => '4.378', 'bg' => 'linear-gradient(135deg,#B8F200 0%,#39FF14 40%,#00E5FF 100%)', 'tone' => 'light'],
-            ['title' => 'Navegadores mais usados', 'value' => 'Outros 54,0% · Chrome 31,0% · Safari 10,0%', 'bg' => 'linear-gradient(135deg,#9D4EDD 0%,#C77DFF 46%,#00F5A0 100%)', 'tone' => 'dark'],
-            ['title' => 'Sistemas operacionais mais usados', 'value' => 'Outros 54,0% · Windows 20,0% · iOS 9,0%', 'bg' => 'linear-gradient(135deg,#FF9E00 0%,#FFD60A 45%,#7BFF00 100%)', 'tone' => 'light'],
+            ['title' => 'Visitas nos últimos 15 dias', 'value' => '4.378', 'bg' => 'linear-gradient(135deg,#242424 0%,#303030 52%,#484848 100%)', 'tone' => 'dark'],
+            ['title' => 'Navegadores mais usados', 'value' => [
+                ['label' => 'Chrome', 'value' => 31.0],
+                ['label' => 'Safari', 'value' => 10.0],
+                ['label' => 'Outros', 'value' => 54.0],
+            ], 'bg' => 'linear-gradient(135deg,#9D4EDD 0%,#C77DFF 46%,#00F5A0 100%)', 'tone' => 'dark'],
+            ['title' => 'Sistemas operacionais mais usados', 'value' => [
+                ['label' => 'Windows', 'value' => 20.0],
+                ['label' => 'iOS', 'value' => 9.0],
+                ['label' => 'Outros', 'value' => 54.0],
+            ], 'bg' => 'linear-gradient(135deg,#FF9E00 0%,#FFD60A 45%,#7BFF00 100%)', 'tone' => 'light'],
         ];
 
         $analytics_charts = [
             'visitas_15' => [220, 190, 230, 245, 210, 275, 260, 248, 320, 290, 340, 315, 360, 330, 305],
             'usuarios_15' => [2, 1, 1, 2, 1, 2, 2, 3, 2, 2, 3, 4, 3, 4, 3],
             'por_pais' => [
-                ['label' => 'Outros', 'value' => 52.0],
                 ['label' => 'Brasil', 'value' => 34.0],
                 ['label' => 'Argentina', 'value' => 8.0],
                 ['label' => 'Chile', 'value' => 6.0],
+                ['label' => 'Outros', 'value' => 52.0],
             ],
             'plataformas' => [
-                ['label' => 'Outros', 'value' => 54.0],
                 ['label' => 'Windows', 'value' => 20.0],
                 ['label' => 'iOS', 'value' => 9.0],
                 ['label' => 'Android', 'value' => 11.0],
                 ['label' => 'macOS', 'value' => 6.0],
+                ['label' => 'Outros', 'value' => 54.0],
             ],
             'navegadores' => [
-                ['label' => 'Outros', 'value' => 54.0],
                 ['label' => 'Chrome', 'value' => 31.0],
                 ['label' => 'Safari', 'value' => 10.0],
                 ['label' => 'Firefox', 'value' => 5.0],
+                ['label' => 'Outros', 'value' => 54.0],
             ],
         ];
 
@@ -1688,9 +1696,16 @@ final class RMA_Governance {
             var analyticsCards = <?php echo wp_json_encode($analytics_cards); ?>;
             var chartData = <?php echo wp_json_encode($analytics_charts); ?>;
             var aliases = ['projetos publicados','projetos em destaque','projetos em andamento','projetos concluídos'];
-            var palette = ['#c61f4b','#f2b58f','#6669ac','#2ea243','#aacb31','#0ea5e9'];
+            var palette = ['#E6007E','#FF6B00','#FFD400','#00E6D2','#7B61FF','#00A3FF'];
 
             function fmtPct(v){ return Number(v).toFixed(1).replace('.', ',') + '%'; }
+
+            function renderTopValue(value){
+                if (Array.isArray(value)) {
+                    return value.map(function(item){ return '<span class=\"rma-neon-line\">'+item.label+' '+fmtPct(item.value)+'</span>'; }).join('');
+                }
+                return '<span class=\"rma-neon-line\">'+String(value || '')+'</span>';
+            }
 
             function renderLine(values, stroke) {
                 var w = 320, h = 180, p = 16;
@@ -1702,7 +1717,10 @@ final class RMA_Governance {
                     var y = h - p - ((v - min) / range) * (h - p * 2);
                     return x.toFixed(1) + ',' + y.toFixed(1);
                 }).join(' ');
-                return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="180" aria-hidden="true"><polyline fill="none" stroke="'+stroke+'" stroke-width="3" points="'+pts+'"/><polyline fill="none" stroke="rgba(148,163,184,.35)" stroke-width="1" points="'+pts+'"/></svg>';
+                var sum = values.reduce(function(a,b){ return a + Number(b || 0); }, 0);
+                var avg = values.length ? (sum / values.length) : 0;
+                var last = values.length ? values[values.length - 1] : 0;
+                return '<svg viewBox=\"0 0 '+w+' '+h+'\" width=\"100%\" height=\"180\" aria-hidden=\"true\"><polyline fill=\"none\" stroke=\"'+stroke+'\" stroke-width=\"3\" points=\"'+pts+'\"/><polyline fill=\"none\" stroke=\"rgba(148,163,184,.35)\" stroke-width=\"1\" points=\"'+pts+'\"/></svg><div class=\"rma-line-meta\"><span>Mín: '+min+'</span><span>Méd: '+avg.toFixed(1).replace('.', ',')+'</span><span>Máx: '+max+'</span><span>Último: '+last+'</span></div>'; 
             }
 
             function renderDonut(items){
@@ -1752,7 +1770,7 @@ final class RMA_Governance {
                 if (!document.getElementById('rma-neon-analytics-style')) {
                     var style = document.createElement('style');
                     style.id = 'rma-neon-analytics-style';
-                    style.textContent = '.rma-neon-wrap{margin:16px 0 12px;font-family:"Maven Pro",Segoe UI,Arial,sans-serif}.rma-neon-top,.rma-neon-bottom{display:grid;gap:14px}.rma-neon-top{grid-template-columns:repeat(5,minmax(220px,1fr));margin-bottom:14px}.rma-neon-bottom{grid-template-columns:repeat(5,minmax(220px,1fr))}.rma-neon-card{border-radius:18px;padding:16px;box-shadow:0 12px 30px rgba(15,23,42,.18);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.rma-neon-card.tone-dark,.rma-neon-card.tone-dark *{color:#fff !important}.rma-neon-card.tone-light,.rma-neon-card.tone-light *{color:#10253a !important}.rma-neon-title,.rma-neon-value{margin:0;font-size:18px;line-height:1.35;font-weight:700;letter-spacing:0;text-transform:none}.rma-neon-value{margin-top:8px}.rma-chart-card{background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.7);border-radius:18px;padding:14px;box-shadow:0 12px 30px rgba(15,23,42,.10);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.rma-chart-title{margin:0 0 10px;font-size:18px;font-weight:700;color:#0f6b5f;text-align:center;letter-spacing:0;text-transform:none}.rma-chart-plot{min-height:220px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(229,245,255,.68));padding:8px}.rma-donut-wrap{display:grid;place-items:center;gap:10px}.rma-donut-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.rma-donut-legend span{font-size:18px;color:#1f3348;display:flex;align-items:center;gap:6px}.rma-donut-legend i{width:10px;height:10px;border-radius:999px;display:inline-block}@media (max-width:1400px){.rma-neon-top,.rma-neon-bottom{grid-template-columns:repeat(2,minmax(220px,1fr));}}';
+                    style.textContent = '.rma-neon-wrap{margin:16px 0 12px;font-family:"Maven Pro",Segoe UI,Arial,sans-serif}.rma-neon-top,.rma-neon-bottom{display:grid;gap:14px}.rma-neon-top{grid-template-columns:repeat(5,minmax(220px,1fr));margin-bottom:14px}.rma-neon-bottom{grid-template-columns:repeat(5,minmax(220px,1fr))}.rma-neon-card{border-radius:18px;padding:16px;box-shadow:0 12px 30px rgba(15,23,42,.18);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.rma-neon-card.tone-dark,.rma-neon-card.tone-dark *{color:#fff !important}.rma-neon-card.tone-light,.rma-neon-card.tone-light *{color:#10253a !important}.rma-neon-title{margin:0;font-size:14px;line-height:1.25;font-weight:700;letter-spacing:0;text-transform:none}.rma-neon-value{margin:8px 0 0;font-size:16px;line-height:1.25;font-weight:700;letter-spacing:0;text-transform:none}.rma-neon-line{display:block;font-size:16px;line-height:1.25;white-space:nowrap}.rma-chart-card{background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.7);border-radius:18px;padding:14px;box-shadow:0 12px 30px rgba(15,23,42,.10);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.rma-chart-title{margin:0 0 10px;font-size:18px;font-weight:700;color:#0f6b5f;text-align:center;letter-spacing:0;text-transform:none}.rma-chart-plot{min-height:220px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(229,245,255,.68));padding:8px}.rma-line-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}.rma-line-meta span{font-size:12px;color:#526579;background:rgba(255,255,255,.75);border:1px solid rgba(203,213,225,.8);border-radius:999px;padding:2px 8px}.rma-donut-wrap{display:grid;place-items:center;gap:10px}.rma-donut-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.rma-donut-legend span{font-size:18px;color:#1f3348;display:flex;align-items:center;gap:6px}.rma-donut-legend i{width:10px;height:10px;border-radius:999px;display:inline-block}@media (max-width:1400px){.rma-neon-top,.rma-neon-bottom{grid-template-columns:repeat(2,minmax(220px,1fr));}}';
                     document.head.appendChild(style);
                 }
 
@@ -1768,7 +1786,7 @@ final class RMA_Governance {
                         var c = document.createElement('div');
                         c.className = 'rma-neon-card tone-' + (item.tone || 'dark');
                         c.style.background = item.bg;
-                        c.innerHTML = '<p class="rma-neon-title">'+item.title+'</p><p class="rma-neon-value">'+item.value+'</p>';
+                        c.innerHTML = '<p class=\"rma-neon-title\">'+item.title+'</p><p class=\"rma-neon-value\">'+renderTopValue(item.value)+'</p>'; 
                         top.appendChild(c);
                     });
 
