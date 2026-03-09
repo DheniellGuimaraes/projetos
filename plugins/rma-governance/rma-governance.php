@@ -1650,11 +1650,11 @@ final class RMA_Governance {
         ];
 
         $analytics_cards = [
-            ['title' => 'USUÁRIOS ONLINE', 'value' => '2', 'bg' => 'linear-gradient(135deg,#ff1f5b,#c9184a)', 'tone' => 'dark'],
-            ['title' => 'EXIBIÇÕES HOJE', 'value' => '185', 'bg' => 'linear-gradient(135deg,#ffb084,#ff8e72)', 'tone' => 'dark'],
-            ['title' => 'VISITAS NOS ÚLTIMOS 15 DIAS', 'value' => '4.378', 'bg' => 'linear-gradient(135deg,#6b6bd6,#5d62b5)', 'tone' => 'dark'],
-            ['title' => 'NAVEGADORES MAIS USADOS', 'value' => 'Outros 54,0% · Chrome 31,0% · Safari 10,0%', 'bg' => 'linear-gradient(135deg,#1dc756,#16a34a)', 'tone' => 'dark'],
-            ['title' => 'SISTEMAS OPERACIONAIS MAIS USADOS', 'value' => 'Outros 54,0% · Windows 20,0% · iOS 9,0%', 'bg' => 'linear-gradient(135deg,#d5ef3f,#9fd126)', 'tone' => 'light'],
+            ['title' => 'Usuários online', 'value' => '2', 'bg' => 'linear-gradient(135deg,#ff1f5b,#c9184a)', 'tone' => 'dark'],
+            ['title' => 'Exibições hoje', 'value' => '185', 'bg' => 'linear-gradient(135deg,#ffb084,#ff8e72)', 'tone' => 'dark'],
+            ['title' => 'Visitas nos últimos 15 dias', 'value' => '4.378', 'bg' => 'linear-gradient(135deg,#6b6bd6,#5d62b5)', 'tone' => 'dark'],
+            ['title' => 'Navegadores mais usados', 'value' => 'Outros 54,0% · Chrome 31,0% · Safari 10,0%', 'bg' => 'linear-gradient(135deg,#1dc756,#16a34a)', 'tone' => 'dark'],
+            ['title' => 'Sistemas operacionais mais usados', 'value' => 'Outros 54,0% · Windows 20,0% · iOS 9,0%', 'bg' => 'linear-gradient(135deg,#d5ef3f,#9fd126)', 'tone' => 'light'],
         ];
 
         $analytics_charts = [
@@ -1734,7 +1734,9 @@ final class RMA_Governance {
                     var linkEl = wrap.querySelector('a');
                     if (titleEl && item.title) { titleEl.textContent = item.title; titleEl.style.fontSize='18px'; titleEl.style.fontFamily='Maven Pro, Segoe UI, Arial, sans-serif'; }
                     if (numEl && typeof item.value !== 'undefined') { numEl.textContent = String(item.value); numEl.style.fontSize='18px'; numEl.style.fontFamily='Maven Pro, Segoe UI, Arial, sans-serif'; }
-                    if (linkEl && item.url) { linkEl.setAttribute('href', item.url); linkEl.style.fontSize='18px'; linkEl.style.fontFamily='Maven Pro, Segoe UI, Arial, sans-serif'; }
+                    if (linkEl && item.url) { linkEl.setAttribute('href', item.url); }
+                    wrap.style.fontFamily='Maven Pro, Segoe UI, Arial, sans-serif';
+                    wrap.style.fontSize='18px';
                 });
 
                 var removeTitles = ['visualizações de perfil','visualizacoes de perfil','propostas recentes','projetos mais vistos','detalhe do plano atual'];
@@ -1750,7 +1752,7 @@ final class RMA_Governance {
                 if (!document.getElementById('rma-neon-analytics-style')) {
                     var style = document.createElement('style');
                     style.id = 'rma-neon-analytics-style';
-                    style.textContent = '.rma-neon-wrap{margin:16px 0 12px;font-family:"Maven Pro",Segoe UI,Arial,sans-serif}.rma-neon-top,.rma-neon-bottom{display:grid;gap:14px}.rma-neon-top{grid-template-columns:repeat(5,minmax(220px,1fr));margin-bottom:14px}.rma-neon-bottom{grid-template-columns:repeat(5,minmax(220px,1fr))}.rma-neon-card{border-radius:18px;padding:16px;box-shadow:0 12px 30px rgba(15,23,42,.18);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.rma-neon-card.tone-dark{color:#fff}.rma-neon-card.tone-light{color:#10253a}.rma-neon-title,.rma-neon-value{margin:0;font-size:18px;line-height:1.35;font-weight:700}.rma-neon-value{margin-top:8px}.rma-chart-card{background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.7);border-radius:18px;padding:14px;box-shadow:0 12px 30px rgba(15,23,42,.10);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.rma-chart-title{margin:0 0 10px;font-size:18px;font-weight:700;color:#0f6b5f;text-align:center}.rma-chart-plot{min-height:220px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(229,245,255,.68));padding:8px}.rma-donut-wrap{display:grid;place-items:center;gap:10px}.rma-donut-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.rma-donut-legend span{font-size:18px;color:#1f3348;display:flex;align-items:center;gap:6px}.rma-donut-legend i{width:10px;height:10px;border-radius:999px;display:inline-block}@media (max-width:1400px){.rma-neon-top,.rma-neon-bottom{grid-template-columns:repeat(2,minmax(220px,1fr));}}';
+                    style.textContent = '.rma-neon-wrap{margin:16px 0 12px;font-family:"Maven Pro",Segoe UI,Arial,sans-serif}.rma-neon-top,.rma-neon-bottom{display:grid;gap:14px}.rma-neon-top{grid-template-columns:repeat(5,minmax(220px,1fr));margin-bottom:14px}.rma-neon-bottom{grid-template-columns:repeat(5,minmax(220px,1fr))}.rma-neon-card{border-radius:18px;padding:16px;box-shadow:0 12px 30px rgba(15,23,42,.18);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.rma-neon-card.tone-dark,.rma-neon-card.tone-dark *{color:#fff !important}.rma-neon-card.tone-light,.rma-neon-card.tone-light *{color:#10253a !important}.rma-neon-title,.rma-neon-value{margin:0;font-size:18px;line-height:1.35;font-weight:700;letter-spacing:0;text-transform:none}.rma-neon-value{margin-top:8px}.rma-chart-card{background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.7);border-radius:18px;padding:14px;box-shadow:0 12px 30px rgba(15,23,42,.10);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.rma-chart-title{margin:0 0 10px;font-size:18px;font-weight:700;color:#0f6b5f;text-align:center;letter-spacing:0;text-transform:none}.rma-chart-plot{min-height:220px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(229,245,255,.68));padding:8px}.rma-donut-wrap{display:grid;place-items:center;gap:10px}.rma-donut-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.rma-donut-legend span{font-size:18px;color:#1f3348;display:flex;align-items:center;gap:6px}.rma-donut-legend i{width:10px;height:10px;border-radius:999px;display:inline-block}@media (max-width:1400px){.rma-neon-top,.rma-neon-bottom{grid-template-columns:repeat(2,minmax(220px,1fr));}}';
                     document.head.appendChild(style);
                 }
 
@@ -1773,11 +1775,11 @@ final class RMA_Governance {
                     var bottom = document.createElement('div');
                     bottom.className = 'rma-neon-bottom';
                     var cardsLower = [
-                        {title:'VISITAS NOS ÚLTIMOS 15 DIAS', html: renderLine(chartData.visitas_15 || [], '#c61f4b')},
-                        {title:'USUÁRIOS NOS ÚLTIMOS 15 DIAS', html: renderLine(chartData.usuarios_15 || [], '#f2b58f')},
-                        {title:'VISITAS POR PAÍS', html: renderDonut(chartData.por_pais || [])},
-                        {title:'PLATAFORMAS USADAS', html: renderDonut(chartData.plataformas || [])},
-                        {title:'NAVEGADORES USADOS', html: renderDonut(chartData.navegadores || [])}
+                        {title:'Visitas nos últimos 15 dias', html: renderLine(chartData.visitas_15 || [], '#c61f4b')},
+                        {title:'Usuários nos últimos 15 dias', html: renderLine(chartData.usuarios_15 || [], '#f2b58f')},
+                        {title:'Visitas por país', html: renderDonut(chartData.por_pais || [])},
+                        {title:'Plataformas usadas', html: renderDonut(chartData.plataformas || [])},
+                        {title:'Navegadores usados', html: renderDonut(chartData.navegadores || [])}
                     ];
                     cardsLower.forEach(function(item){
                         var c = document.createElement('div');
