@@ -1650,11 +1650,11 @@ final class RMA_Governance {
         ];
 
         $analytics_cards = [
-            ['title' => 'Usuários online', 'value' => '2', 'bg' => 'linear-gradient(135deg,#39FF14 0%,#00FFD5 52%,#0096FF 100%)', 'tone' => 'dark'],
-            ['title' => 'Exibições hoje', 'value' => '185', 'bg' => 'linear-gradient(135deg,#39FF14 0%,#00F5A0 52%,#0066FF 100%)', 'tone' => 'dark'],
-            ['title' => 'Visitas nos últimos 15 dias', 'value' => '4.378', 'bg' => 'linear-gradient(135deg,#39FF14 0%,#00FFF0 52%,#5B6CFF 100%)', 'tone' => 'dark'],
-            ['title' => 'Navegadores mais usados', 'value' => 'Outros 54,0% · Chrome 31,0% · Safari 10,0%', 'bg' => 'linear-gradient(135deg,#39FF14 0%,#00FFC6 52%,#1E7BFF 100%)', 'tone' => 'dark'],
-            ['title' => 'Sistemas operacionais mais usados', 'value' => 'Outros 54,0% · Windows 20,0% · iOS 9,0%', 'bg' => 'linear-gradient(135deg,#39FF14 0%,#00EFAF 52%,#2A5FFF 100%)', 'tone' => 'light'],
+            ['title' => 'Usuários online', 'value' => '2', 'bg' => 'linear-gradient(135deg,#FF007A 0%,#FF5E5B 45%,#FFB347 100%)', 'tone' => 'dark'],
+            ['title' => 'Exibições hoje', 'value' => '185', 'bg' => 'linear-gradient(135deg,#00F5D4 0%,#00BBF9 48%,#4361EE 100%)', 'tone' => 'dark'],
+            ['title' => 'Visitas nos últimos 15 dias', 'value' => '4.378', 'bg' => 'linear-gradient(135deg,#B8F200 0%,#39FF14 40%,#00E5FF 100%)', 'tone' => 'light'],
+            ['title' => 'Navegadores mais usados', 'value' => 'Outros 54,0% · Chrome 31,0% · Safari 10,0%', 'bg' => 'linear-gradient(135deg,#9D4EDD 0%,#C77DFF 46%,#00F5A0 100%)', 'tone' => 'dark'],
+            ['title' => 'Sistemas operacionais mais usados', 'value' => 'Outros 54,0% · Windows 20,0% · iOS 9,0%', 'bg' => 'linear-gradient(135deg,#FF9E00 0%,#FFD60A 45%,#7BFF00 100%)', 'tone' => 'light'],
         ];
 
         $analytics_charts = [
