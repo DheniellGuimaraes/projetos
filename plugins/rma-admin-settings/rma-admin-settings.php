@@ -929,11 +929,24 @@ final class RMA_Login_2FA_Gate {
     private const PENDING_PREFIX = 'rma_2fa_pending_';
 
     public function __construct() {
-        add_filter('authenticate', [$this, 'intercept_login'], 99, 3);
-        add_filter('login_redirect', [$this, 'force_2fa_redirect'], 20, 3);
-        add_action('template_redirect', [$this, 'enforce_pending_2fa']);
-        add_action('template_redirect', [$this, 'maybe_render_frontend_2fa']);
-        add_action('login_form_rma_2fa', [$this, 'render_2fa_form']);
+        // 2FA de login desativado por decisão de produto.
+        // Mantemos apenas tratamento de URL legada para evitar exibição do wp-login 2FA.
+        add_action('template_redirect', [$this, 'redirect_legacy_2fa_requests'], 1);
+    }
+
+    public function redirect_legacy_2fa_requests(): void {
+        if (is_admin() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
+            return;
+        }
+
+        $action = isset($_GET['action']) ? sanitize_key((string) wp_unslash($_GET['action'])) : '';
+        if ($action !== 'rma_2fa') {
+            return;
+        }
+
+        $target = home_url('/gerenciador/');
+        wp_safe_redirect($target);
+        exit;
     }
 
     public function intercept_login($user, string $username, string $password) {
