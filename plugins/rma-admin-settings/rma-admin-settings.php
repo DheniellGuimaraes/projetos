@@ -932,6 +932,7 @@ final class RMA_Login_2FA_Gate {
         add_filter('authenticate', [$this, 'intercept_login'], 99, 3);
         add_filter('login_redirect', [$this, 'force_2fa_redirect'], 20, 3);
         add_action('template_redirect', [$this, 'enforce_pending_2fa']);
+        add_action('template_redirect', [$this, 'maybe_render_frontend_2fa']);
         add_action('login_form_rma_2fa', [$this, 'render_2fa_form']);
     }
 
@@ -972,11 +973,7 @@ final class RMA_Login_2FA_Gate {
 
         set_transient(self::PENDING_PREFIX . (int) $user->ID, $token, 10 * MINUTE_IN_SECONDS);
 
-        $url = add_query_arg([
-            'action' => 'rma_2fa',
-            'token' => rawurlencode($token),
-            'user' => (int) $user->ID,
-        ], wp_login_url());
+        $url = $this->build_2fa_url($token, (int) $user->ID);
 
         if (! wp_doing_ajax() && ! (defined('REST_REQUEST') && REST_REQUEST)) {
             wp_safe_redirect($url);
@@ -1012,11 +1009,7 @@ final class RMA_Login_2FA_Gate {
             return $redirect_to;
         }
 
-        return add_query_arg([
-            'action' => 'rma_2fa',
-            'token' => rawurlencode($token),
-            'user' => (int) $user->ID,
-        ], wp_login_url());
+        return $this->build_2fa_url($token, (int) $user->ID);
     }
 
     public function enforce_pending_2fa(): void {
@@ -1039,14 +1032,95 @@ final class RMA_Login_2FA_Gate {
             return;
         }
 
-        $url = add_query_arg([
-            'action' => 'rma_2fa',
-            'token' => rawurlencode($token),
-            'user' => (int) $user->ID,
-        ], wp_login_url());
+        $url = $this->build_2fa_url($token, (int) $user->ID);
 
         wp_safe_redirect($url);
         exit;
+    }
+
+    public function maybe_render_frontend_2fa(): void {
+        if (is_admin() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) {
+            return;
+        }
+
+        $action = isset($_GET['action']) ? sanitize_key((string) wp_unslash($_GET['action'])) : '';
+        if ($action !== 'rma_2fa') {
+            return;
+        }
+
+        $token = isset($_GET['token']) ? sanitize_text_field(wp_unslash($_GET['token'])) : '';
+        $user_id = isset($_GET['user']) ? (int) $_GET['user'] : 0;
+        $user = $user_id > 0 ? get_user_by('id', $user_id) : false;
+        if (! $user instanceof WP_User || $token === '') {
+            wp_die('Sessão de 2 fatores inválida.');
+        }
+
+        $error_message = '';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rma_front_2fa_submit'])) {
+            check_admin_referer('rma_front_2fa_validate');
+            $posted_token = sanitize_text_field((string) wp_unslash($_POST['rma_2fa_token'] ?? ''));
+            $code = sanitize_text_field((string) wp_unslash($_POST['rma_2fa_code'] ?? ''));
+            $validated = $this->validate_second_step($user, $posted_token, $code);
+            if ($validated instanceof WP_User) {
+                wp_set_current_user((int) $validated->ID);
+                wp_set_auth_cookie((int) $validated->ID, true);
+                $redirect = home_url('/dashboard/');
+                wp_safe_redirect($redirect);
+                exit;
+            }
+            if (is_wp_error($validated)) {
+                $error_message = $validated->get_error_message();
+            }
+        }
+
+        status_header(200);
+        nocache_headers();
+        ?>
+        <!doctype html>
+        <html <?php language_attributes(); ?>>
+        <head>
+            <meta charset="<?php bloginfo('charset'); ?>" />
+            <meta name="viewport" content="width=device-width,initial-scale=1" />
+            <title>Validação de 2 fatores</title>
+            <style>
+                body{margin:0;background:#eef2f7;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#1f2937}
+                .rma-2fa-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
+                .rma-2fa-card{width:min(460px,94vw);background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.75);border-radius:22px;backdrop-filter:blur(10px);box-shadow:0 20px 50px rgba(15,23,42,.14);padding:26px}
+                .rma-2fa-logo{display:block;max-width:180px;margin:0 auto 16px}
+                .rma-2fa-title{margin:0 0 6px;font-size:31px;line-height:1.05;color:#17324d;font-weight:800}
+                .rma-2fa-sub{margin:0 0 16px;color:#50657a}
+                .rma-2fa-input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #d0deeb;font-size:18px;letter-spacing:4px;box-sizing:border-box}
+                .rma-2fa-btn{margin-top:14px;width:100%;padding:12px 14px;border:0;border-radius:12px;background:#7bad39;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+                .rma-2fa-err{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#ffe9ea;border:1px solid #f7c2c6;color:#ad1f2d}
+                .rma-2fa-back{display:block;margin-top:12px;text-align:center;color:#4f46e5;text-decoration:none}
+            </style>
+        </head>
+        <body>
+            <div class="rma-2fa-wrap">
+                <form class="rma-2fa-card" method="post">
+                    <img class="rma-2fa-logo" src="https://www.agenciadigitalsaopaulo.com.br/rma/wp-content/uploads/2021/02/logo-.png" alt="RMA"/>
+                    <h1 class="rma-2fa-title">Valide seu acesso</h1>
+                    <p class="rma-2fa-sub">Digite o código enviado para <strong><?php echo esc_html($user->user_email); ?></strong>.</p>
+                    <?php if ($error_message !== '') : ?><p class="rma-2fa-err"><?php echo esc_html($error_message); ?></p><?php endif; ?>
+                    <input class="rma-2fa-input" type="text" name="rma_2fa_code" maxlength="6" required placeholder="000000" />
+                    <input type="hidden" name="rma_2fa_token" value="<?php echo esc_attr($token); ?>" />
+                    <?php wp_nonce_field('rma_front_2fa_validate'); ?>
+                    <button class="rma-2fa-btn" type="submit" name="rma_front_2fa_submit" value="1">Validar e entrar</button>
+                    <a class="rma-2fa-back" href="<?php echo esc_url(home_url('/gerenciador/')); ?>">Voltar ao login</a>
+                </form>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+
+    private function build_2fa_url(string $token, int $user_id): string {
+        return add_query_arg([
+            'action' => 'rma_2fa',
+            'token' => rawurlencode($token),
+            'user' => $user_id,
+        ], wp_login_url());
     }
 
     public function render_2fa_form(): void {
