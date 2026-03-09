@@ -11609,7 +11609,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						<option value="adimplente" <?php selected($initial_params['adimplencia'], 'adimplente'); ?>><?php echo esc_html__('Somente adimplentes', 'exertio_theme'); ?></option>
 						<option value="inadimplente" <?php selected($initial_params['adimplencia'], 'inadimplente'); ?>><?php echo esc_html__('Somente inadimplentes', 'exertio_theme'); ?></option>
 					</select>
-					<button type="button" class="rma-map-apply"><?php echo esc_html__('Aplicar', 'exertio_theme'); ?></button>
+					<button type="button" class="rma-map-apply"><?php echo esc_html__('Buscar', 'exertio_theme'); ?></button>
 				</form>
 				<div class="rma-map-feedback" aria-live="polite"></div>
 				<div class="rma-map-brazil" aria-label="Mapa do Brasil">
@@ -11625,7 +11625,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				<div class="rma-map-states"></div>
 				<div class="rma-map-results">
 					<?php if (!$has_initial_search) : ?>
-						<p class="rma-map-empty"><?php echo esc_html__('Digite um termo de busca e clique em Aplicar para exibir as entidades.', 'exertio_theme'); ?></p>
+						<p class="rma-map-empty"><?php echo esc_html__('Digite um termo de busca e clique em Buscar para exibir as entidades.', 'exertio_theme'); ?></p>
 					<?php elseif (!empty($initial_items)) : ?>
 						<?php foreach ($initial_items as $initial_item) : ?>
 							<?php $initial_city_state = trim(((string) ($initial_item['city'] ?? '')) . ((string) ($initial_item['state'] ?? '') !== '' ? '/' . (string) ($initial_item['state'] ?? '') : ''), '/'); ?>
@@ -11660,6 +11660,13 @@ if (!function_exists('rma_map_directory_shortcode')) {
 				const perPage = Number.isFinite(parsedPerPage) && parsedPerPage > 0 ? Math.min(parsedPerPage, 100) : 12;
 				const filtersForm = root.querySelector('.rma-map-filters');
 				if (!filtersForm) return;
+const isShowcase = !!root.closest('.rma-map-showcase-shortcode');
+				if (isShowcase) {
+					const areaField = filtersForm.querySelector('[name="area"]');
+					const adimplenciaField = filtersForm.querySelector('[name="adimplencia"]');
+					if (areaField) { areaField.value = ''; areaField.disabled = true; }
+					if (adimplenciaField) { adimplenciaField.value = 'all'; adimplenciaField.disabled = true; }
+				}
 				const applyButton = root.querySelector('.rma-map-apply');
 				const feedback = root.querySelector('.rma-map-feedback');
 				const statesBox = root.querySelector('.rma-map-states');
@@ -11967,7 +11974,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 					if (stateFilter.value === uf && currentPage === 1) return;
 					stateFilter.value = uf;
 					syncMapActiveState(uf);
-					feedback.textContent = '<?php echo esc_js(__('Clique em Aplicar para atualizar os resultados.', 'exertio_theme')); ?>';
+					feedback.textContent = '<?php echo esc_js(__('Clique em Buscar para atualizar os resultados.', 'exertio_theme')); ?>';
 				});
 
 				let searchDebounce;
@@ -12281,7 +12288,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (!/^[a-z]{2}$/.test(uf)) return;
 						stateFilter.value = uf;
 						syncMapActiveState(uf);
-						feedback.textContent = '<?php echo esc_js(__('Estado selecionado no mapa. Clique em Aplicar para buscar.', 'exertio_theme')); ?>';
+						feedback.textContent = '<?php echo esc_js(__('Estado selecionado no mapa. Clique em Buscar para filtrar.', 'exertio_theme')); ?>';
 						});
 						mapSvg.addEventListener('keydown', (ev) => {
 							if (ev.key !== 'Enter' && ev.key !== ' ') return;
@@ -12300,7 +12307,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (!/^[a-z]{2}$/.test(uf)) return;
 						stateFilter.value = uf;
 						syncMapActiveState(uf);
-						feedback.textContent = '<?php echo esc_js(__('Estado selecionado. Clique em Aplicar para buscar.', 'exertio_theme')); ?>';
+						feedback.textContent = '<?php echo esc_js(__('Estado selecionado. Clique em Buscar para filtrar.', 'exertio_theme')); ?>';
 					});
 				}
 
@@ -12310,7 +12317,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						const normalizedState = String(stateFilter.value || '').toLowerCase();
 						stateFilter.value = /^[a-z]{2}$/.test(normalizedState) ? normalizedState : '';
 						syncMapActiveState(stateFilter.value);
-						feedback.textContent = '<?php echo esc_js(__('Clique em Aplicar para atualizar os resultados.', 'exertio_theme')); ?>';
+						feedback.textContent = '<?php echo esc_js(__('Clique em Buscar para atualizar os resultados.', 'exertio_theme')); ?>';
 					});
 				}
 				if (adimplenciaFilter) {
@@ -12318,7 +12325,7 @@ if (!function_exists('rma_map_directory_shortcode')) {
 						if (root.getAttribute('aria-busy') === 'true') return;
 						const normalizedAdimplencia = String(adimplenciaFilter.value || '').toLowerCase();
 						adimplenciaFilter.value = allowedAdimplencia.has(normalizedAdimplencia) ? normalizedAdimplencia : 'all';
-						feedback.textContent = '<?php echo esc_js(__('Clique em Aplicar para atualizar os resultados.', 'exertio_theme')); ?>';
+						feedback.textContent = '<?php echo esc_js(__('Clique em Buscar para atualizar os resultados.', 'exertio_theme')); ?>';
 					});
 				}
 
@@ -12397,17 +12404,22 @@ if (!function_exists('rma_map_showcase_shortcode')) {
 				.rma-map-showcase-shortcode .rma-map-intro,
 				.rma-map-showcase-shortcode .rma-map-kpis{display:none !important;}
 				.rma-map-showcase-shortcode .rma-map-directory{padding:16px;border-radius:18px;border:1px solid rgba(15,47,74,.15);background:linear-gradient(180deg,#f7fbff 0%,#f2f8fc 100%);}
-				.rma-map-showcase-shortcode .rma-map-filters{display:grid;grid-template-columns:minmax(220px,1.4fr) repeat(4,minmax(170px,1fr)) minmax(180px,.9fr);gap:10px;align-items:stretch;margin:0 0 14px;padding:12px;border:1px solid #dbe7f3;border-radius:14px;background:rgba(255,255,255,.9);box-shadow:0 8px 20px rgba(15,47,74,.08)}
+				.rma-map-showcase-shortcode .rma-map-filters{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(200px,1.1fr) minmax(200px,1.1fr) minmax(170px,.8fr);gap:10px;align-items:stretch;margin:0 0 14px;padding:12px;border:1px solid #dbe7f3;border-radius:14px;background:rgba(255,255,255,.92);box-shadow:0 8px 20px rgba(15,47,74,.08)}
 				.rma-map-showcase-shortcode .rma-map-filters input,
 				.rma-map-showcase-shortcode .rma-map-filters select{height:44px;border:1px solid #c8d9ea;border-radius:12px;padding:0 14px;background:#fff;color:#16324a;font-weight:600}
 				.rma-map-showcase-shortcode .rma-map-filters input:focus,
 				.rma-map-showcase-shortcode .rma-map-filters select:focus{outline:none;border-color:#7bad39;box-shadow:0 0 0 3px rgba(123,173,57,.18)}
-				.rma-map-showcase-shortcode .rma-map-filters .rma-map-apply{height:44px;border-radius:12px;background:linear-gradient(135deg,#0f2f4a,#1c4f75);color:#fff;font-weight:800;letter-spacing:.2px}
+				.rma-map-showcase-shortcode .rma-map-filters [name="area"],
+				.rma-map-showcase-shortcode .rma-map-filters [name="adimplencia"]{display:none !important}
+				.rma-map-showcase-shortcode .rma-map-filters [name="state"]{background:#f8fcff;border-color:#bcd2e6;border-radius:12px;color:#13344f;font-weight:700}
+				.rma-map-showcase-shortcode .rma-map-state-chip{background:#f8fcff;border:1px solid #bcd2e6;border-radius:12px;color:#1a4668;font-weight:700;padding:6px 10px}
+				.rma-map-showcase-shortcode .rma-map-state-chip.is-active{background:linear-gradient(135deg,#dff3ff,#ecfff6);border-color:#7bad39;color:#0f2f4a}
+				.rma-map-showcase-shortcode .rma-map-filters .rma-map-apply{height:44px;border-radius:12px;background:linear-gradient(135deg, #7bad39, #28f3a8);color:#fff;font-weight:800;letter-spacing:.2px}
 				.rma-map-showcase-shortcode .rma-map-feedback{margin:0 0 10px;padding:8px 10px;border-left:3px solid #7bad39;background:rgba(123,173,57,.08);border-radius:8px;color:#16324a;font-weight:600}
 				.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin{transform:translate(-50%,-100%) scale(1.12);filter:drop-shadow(0 4px 7px rgba(11,64,44,.45));}
 				.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin path{fill:#16a34a !important;stroke:#0f7a36 !important;stroke-width:1.25 !important}
 				.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin circle{fill:#ecfdf3 !important}
-				@media (max-width:1240px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(3,minmax(180px,1fr));}}
+				@media (max-width:1240px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(2,minmax(200px,1fr));}.rma-map-showcase-shortcode .rma-map-filters .rma-map-apply{grid-column:1 / -1;}}
 				@media (max-width:820px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(2,minmax(160px,1fr));}.rma-map-showcase-shortcode .rma-map-filters .rma-map-apply{grid-column:1 / -1;}}
 				@media (max-width:560px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:1fr;}}
 				.rma-map-showcase-shortcode .rma-map-brazil-grid{margin-top:0;}
