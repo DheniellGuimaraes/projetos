@@ -1,0 +1,2 @@
+# Binary archives should not be versioned in this repository
+*.zip
