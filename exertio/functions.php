@@ -2523,8 +2523,10 @@ if (!function_exists('rma_fix_map_showcase_pin_render')) {
 					.rma-map-showcase-shortcode .rma-map-state-chip.is-active{background:linear-gradient(135deg,#dff3ff,#ecfff6);border-color:#7bad39;color:#0f2f4a}
 					.rma-map-showcase-shortcode .rma-map-filters .rma-map-apply{height:44px;line-height:44px;border-radius:12px;background:linear-gradient(135deg, #7bad39, #28f3a8);color:#fff;font-weight:800;letter-spacing:.2px;width:100%;white-space:nowrap}
 					.rma-map-showcase-shortcode .rma-map-feedback{margin:0 0 10px;padding:8px 10px;border-left:3px solid #7bad39;background:rgba(123,173,57,.08);border-radius:8px;color:#16324a;font-weight:600}
-					.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin path{fill:#16a34a !important;stroke:#0f7a36 !important;stroke-width:1.25 !important}
+					.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin path{fill:#ff4d00 !important;stroke:#0f7a36 !important;stroke-width:1.25 !important}
 					.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin circle{fill:#ecfdf3 !important}
+					.rma-map-showcase-shortcode .rma-map-tooltip,
+					.rma-map-showcase-shortcode .rma-map-tooltip *{color:#ffffff !important}
 					@media (max-width:1100px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(3,minmax(170px,1fr));}}
 					@media (max-width:760px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(2,minmax(150px,1fr));}}
 					@media (max-width:560px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:1fr;}}
