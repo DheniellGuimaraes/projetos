@@ -335,22 +335,46 @@ final class RMA_Woo_Sync {
     }
 }
 
+function rma_get_annual_dues_product_ids(): array {
+    $ids = [];
+
+    $configured_id = (int) get_option('rma_annual_dues_product_id', 0);
+    if ($configured_id > 0) {
+        $ids[] = $configured_id;
+    }
+
+    $legacy_id = (int) get_option('rma_woo_product_id', 0);
+    if ($legacy_id > 0) {
+        $ids[] = $legacy_id;
+    }
+
+    $ids[] = 3407;
+
+    $ids = array_values(array_unique(array_filter(array_map('absint', $ids))));
+    return $ids;
+}
+
 function rma_contains_annual_dues_product(): bool {
+    $dues_product_ids = rma_get_annual_dues_product_ids();
+    if (empty($dues_product_ids)) {
+        return false;
+    }
+
+    $requested_product_id = absint((int) ($_GET['add-to-cart'] ?? 0)); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+    if ($requested_product_id > 0 && in_array($requested_product_id, $dues_product_ids, true)) {
+        return true;
+    }
+
     if (! function_exists('WC') || ! WC()->cart) {
         return false;
     }
 
-    $dues_product_id = (int) get_option('rma_annual_dues_product_id', 0);
-    if ($dues_product_id <= 0) {
-        $dues_product_id = (int) get_option('rma_woo_product_id', 0);
-    }
-    if ($dues_product_id <= 0) {
-        $dues_product_id = 3407;
-    }
-
     foreach (WC()->cart->get_cart() as $item) {
-        $product_id = (int) ($item['product_id'] ?? 0);
-        if ($product_id === $dues_product_id) {
+        $product_id = absint((int) ($item['product_id'] ?? 0));
+        $variation_id = absint((int) ($item['variation_id'] ?? 0));
+        $is_due_row = (string) ($item['rma_is_annual_due'] ?? '') === '1';
+
+        if ($is_due_row || in_array($product_id, $dues_product_ids, true) || in_array($variation_id, $dues_product_ids, true)) {
             return true;
         }
     }
