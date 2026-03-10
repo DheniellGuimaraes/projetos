@@ -739,5 +739,85 @@ add_action('woocommerce_thankyou_rma_pix', function (int $order_id): void {
     echo '<script>(function(){var b=document.getElementById("rma-pix-order-copy-btn");var i=document.getElementById("rma-pix-order-copy-code");var s=document.getElementById("rma-pix-order-copy-status");if(!b||!i){return;}b.addEventListener("click",function(){var v=i.value||"";if(!v){return;}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(function(){s&&s.classList.add("is-visible");});return;}i.select();i.setSelectionRange(0,99999);document.execCommand("copy");s&&s.classList.add("is-visible");});})();</script>';
 });
 
+function rma_get_entity_id_for_current_user_checkout_flow(): int {
+    $user_id = get_current_user_id();
+    if ($user_id <= 0) {
+        return 0;
+    }
+
+    if (function_exists('rma_get_entity_id_by_author')) {
+        return max(0, (int) rma_get_entity_id_by_author($user_id));
+    }
+
+    $entity_id = (int) get_posts([
+        'post_type' => 'rma_entidade',
+        'post_status' => ['publish', 'draft'],
+        'author' => $user_id,
+        'fields' => 'ids',
+        'posts_per_page' => 1,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    ])[0] ?? 0;
+
+    return max(0, $entity_id);
+}
+
+function rma_entity_has_started_or_completed_dues_checkout(int $entity_id): bool {
+    if ($entity_id <= 0 || ! function_exists('wc_get_orders')) {
+        return false;
+    }
+
+    $orders = wc_get_orders([
+        'limit' => 1,
+        'return' => 'ids',
+        'meta_query' => [
+            [
+                'key' => 'rma_entity_id',
+                'value' => $entity_id,
+            ],
+            [
+                'key' => 'rma_is_annual_due',
+                'value' => '1',
+            ],
+        ],
+        'status' => ['pending', 'on-hold', 'processing', 'completed', 'cancelled', 'failed', 'refunded'],
+    ]);
+
+    return ! empty($orders);
+}
+
+add_action('template_redirect', function (): void {
+    if (is_admin() || wp_doing_ajax() || wp_doing_cron() || (defined('REST_REQUEST') && REST_REQUEST)) {
+        return;
+    }
+
+    if (! is_user_logged_in()) {
+        return;
+    }
+
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    $request_path = wp_parse_url($request_uri, PHP_URL_PATH);
+    $request_path = is_string($request_path) ? untrailingslashit($request_path) : '';
+    if ($request_path === '') {
+        return;
+    }
+
+    $activation_path = function_exists('rma_account_setup_path')
+        ? (string) rma_account_setup_path()
+        : (string) untrailingslashit((string) wp_parse_url(home_url('/conta/'), PHP_URL_PATH));
+
+    if ($activation_path === '' || $request_path !== $activation_path) {
+        return;
+    }
+
+    $entity_id = rma_get_entity_id_for_current_user_checkout_flow();
+    if (! rma_entity_has_started_or_completed_dues_checkout($entity_id)) {
+        return;
+    }
+
+    wp_safe_redirect(home_url('/dashboard/'));
+    exit;
+}, 30);
+
 register_deactivation_hook(__FILE__, ['RMA_Woo_Sync', 'deactivate']);
 new RMA_Woo_Sync();
