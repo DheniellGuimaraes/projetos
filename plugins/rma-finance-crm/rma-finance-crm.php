@@ -679,11 +679,20 @@ final class RMA_Finance_CRM {
             ]];
             echo $this->build_table('Minha cobrança', $charge_rows, ['Status', 'Vencimento', 'Valor', 'Último pedido', 'Observação']);
         } elseif ($tab === 'faturas') {
+            $checkout_url = home_url('/checkout/');
+            $product_id = (int) get_option('rma_annual_dues_product_id', 0);
+            $links = [];
+            for ($qty = 1; $qty <= 3; $qty++) {
+                $label = 'Gerar ' . $qty . ' anuidade' . ($qty > 1 ? 's' : '');
+                $url = $product_id > 0 ? add_query_arg(['add-to-cart' => $product_id, 'quantity' => $qty], $checkout_url) : $checkout_url;
+                $links[] = '<a class="rma-fin-quick-action" href="' . esc_url($url) . '">' . esc_html($label) . '</a>';
+            }
+            echo '<div class="rma-fin-obs-panel"><h4>Próximos vencimentos</h4><p style="margin:0 0 10px;color:#475569">Selecione abaixo a quantidade de anuidades para pagar vários anos da filiação.</p><div style="display:flex;flex-wrap:wrap;gap:8px">' . implode('', $links) . '</div></div>';
             $charge_rows = [[
                 $entity['due_date'],
                 $entity['estimated_value'],
                 $entity['status_badge'],
-                'Use a opção de gerar múltiplas anuidades no menu de cobrança para pagar vários anos.',
+                'Botões acima habilitam pagamento de 1, 2 ou 3 anuidades.',
             ]];
             echo $this->build_table('Minhas Faturas', $charge_rows, ['Próximo vencimento', 'Valor', 'Status', 'Ação']);
         } elseif ($tab === 'historico') {

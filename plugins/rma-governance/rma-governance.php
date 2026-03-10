@@ -21,7 +21,7 @@ final class RMA_Governance {
         add_action('wp_footer', [$this, 'inject_entity_dashboard_governance_content'], 100);
         add_action('wp_footer', [$this, 'inject_entity_notifications_dropdown'], 101);
         add_action('wp_footer', [$this, 'inject_entity_dashboard_home_index_cards'], 102);
-        add_action('wp_head', [$this, 'inject_entity_dashboard_preload_guard'], 1);
+        add_action('wp_head', [$this, 'disable_global_preload_overlays'], 1);
 
         add_action('wp_ajax_rma_mark_entity_notifications_read', [$this, 'ajax_mark_entity_notifications_read']);
 
@@ -1606,23 +1606,17 @@ final class RMA_Governance {
     }
 
 
+    public function disable_global_preload_overlays(): void {
+        if (is_admin()) {
+            return;
+        }
+
+        echo '<style id="rma-disable-global-preload">.rma-db-preload .main-panel .content-wrapper,.rma-db-preload .main-content .content-wrapper,.rma-db-preload .dashboard-content-area{visibility:visible!important}.rma-db-preload body:before,.rma-db-preload body:after,.preloader,.loader,.loader-bg,.page-loader,.loading-screen,.loading-overlay,.loader-wrapper,.site-preloader,.se-pre-con,.animsition-loading,.pace,.pace-inactive,.spinner,.spinner-border{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}</style>';
+        echo '<script>(function(){try{document.documentElement.classList.remove("rma-db-preload");var sels=[".preloader",".loader",".loader-bg",".page-loader",".loading-screen",".loading-overlay",".loader-wrapper",".site-preloader",".se-pre-con",".animsition-loading",".pace",".spinner",".spinner-border"];sels.forEach(function(sel){document.querySelectorAll(sel).forEach(function(el){el.style.display="none";if(el.remove){el.remove();}});});}catch(e){}})();</script>';
+    }
+
     public function inject_entity_dashboard_preload_guard(): void {
-        if (is_admin() || ! is_user_logged_in()) {
-            return;
-        }
-
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
-        if ($request_uri === '' || ! str_contains($request_uri, '/dashboard/')) {
-            return;
-        }
-
-        $ext = isset($_GET['ext']) ? sanitize_key((string) wp_unslash($_GET['ext'])) : '';
-        if ($ext !== '' && ! in_array($ext, ['dashboard', 'index'], true)) {
-            return;
-        }
-
-        echo '<script>(function(){try{var u=new URL(window.location.href);var ext=(u.searchParams.get("ext")||"").toLowerCase();if(ext!==""&&ext!=="dashboard"&&ext!=="index"){return;}document.documentElement.classList.add("rma-db-preload");setTimeout(function(){document.documentElement.classList.remove("rma-db-preload");},6000);}catch(e){}})();</script>';
-        echo '<style>.rma-db-preload .main-panel .content-wrapper,.rma-db-preload .main-content .content-wrapper,.rma-db-preload .dashboard-content-area{visibility:hidden!important}.rma-db-preload body:before{content:"";position:fixed;inset:0;background:linear-gradient(145deg,#eef3f8,#e4ebf4);z-index:9998}.rma-db-preload body:after{content:"Carregando painel RMA...";position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid rgba(123,173,57,.35);color:#17324d;font:700 16px/1.2 "Maven Pro",Segoe UI,Arial,sans-serif;box-shadow:0 10px 30px rgba(15,23,42,.12)}</style>';
+        return;
     }
 
     public function inject_entity_dashboard_home_index_cards(): void {
