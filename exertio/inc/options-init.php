@@ -12256,15 +12256,15 @@ const isShowcase = !!root.closest('.rma-map-showcase-shortcode');
 									window.open(markerProfileUrl, '_blank', 'noopener');
 								}
 							});
-							const pinsLayer = document.querySelector('#rma-map-pins');
+							const pinsLayer = mapSvg.querySelector('#rma-map-pins');
 							if (pinsLayer) {
 								pinsLayer.appendChild(pin);
 							} else {
 								group.appendChild(pin);
 							}
 						});
-						const svg = document.querySelector('#map');
-						const pins = document.querySelector('#rma-map-pins');
+						const svg = mapSvg;
+						const pins = mapSvg.querySelector('#rma-map-pins');
 						if (svg && pins) {
 							svg.appendChild(pins);
 						} else {
@@ -12411,6 +12411,8 @@ if (!function_exists('rma_map_showcase_shortcode')) {
 				.rma-map-showcase-shortcode .rma-map-filters select{height:44px;line-height:44px;background-color:#ffffff;border:none;border-radius:15px;border:1px solid #c8d9ea;padding:0 14px;color:#16324a;font-weight:600}
 				.rma-map-showcase-shortcode .rma-map-filters input:focus,
 				.rma-map-showcase-shortcode .rma-map-filters select:focus{outline:none;border-color:#7bad39;box-shadow:0 0 0 3px rgba(123,173,57,.18)}
+				.rma-map-showcase-shortcode .select2-container--default .select2-selection--single .select2-selection__rendered{line-height:43px;background-color:#ffffff;border:none;border-radius:15px;border:1px solid #c8d9ea}
+				.rma-map-showcase-shortcode .select2-container .select2-selection--single{height:44px;border:1px solid #c8d9ea;border-radius:15px;background:#fff}
 				.rma-map-showcase-shortcode .rma-map-filters [name="area"]{display:none !important}
 				.rma-map-showcase-shortcode .rma-map-state-chip{background:#f8fcff;border:1px solid #bcd2e6;border-radius:12px;color:#1a4668;font-weight:700;padding:6px 10px}
 				.rma-map-showcase-shortcode .rma-map-state-chip.is-active{background:linear-gradient(135deg,#dff3ff,#ecfff6);border-color:#7bad39;color:#0f2f4a}
