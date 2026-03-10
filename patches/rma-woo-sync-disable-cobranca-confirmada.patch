@@ -1,0 +1,15 @@
+--- a/plugins/rma-woo-sync/rma-woo-sync.php
++++ b/plugins/rma-woo-sync/rma-woo-sync.php
+@@ -109,11 +109,7 @@
+             update_post_meta($entity_id, 'finance_due_at', gmdate('Y-m-d H:i:s', $due_ts));
+             update_post_meta($entity_id, 'anuidade_vencimento', gmdate('Y-m-d', $due_ts));
+             update_post_meta($entity_id, 'finance_access_status', 'active');
+-
+-            $this->send_anexo2_event_email($entity_id, 'cobranca_confirmada', [
+-                'vencimento' => gmdate('Y-m-d', $due_ts),
+-                'status' => $target_status,
+-                'link_pagamento' => home_url('/dashboard/'),
+-            ]);
++
++            // Removido: envio duplicado do e-mail "ANEXO 2 • COBRANÇA CONFIRMADA".
+         }
