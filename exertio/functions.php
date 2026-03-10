@@ -2489,3 +2489,54 @@ function rma_custom_css_text_primary() {
 }
 add_action('wp_head', 'rma_custom_css_text_primary');
 
+
+if (!function_exists('rma_fix_map_showcase_pin_render')) {
+	function rma_fix_map_showcase_pin_render()
+	{
+		if (!shortcode_exists('rma_map_showcase')) {
+			return;
+		}
+
+		remove_shortcode('rma_map_showcase');
+		add_shortcode('rma_map_showcase', function ($atts = array()) {
+			$atts = shortcode_atts(array(
+				'per_page' => 12,
+			), $atts, 'rma_map_showcase');
+
+			$inner = do_shortcode('[rma_map_directory per_page="' . absint($atts['per_page']) . '"]');
+			ob_start();
+			?>
+			<div class="rma-map-showcase-shortcode">
+				<style>
+					.rma-map-showcase-shortcode .rma-map-intro,
+					.rma-map-showcase-shortcode .rma-map-kpis{display:none !important;}
+					.rma-map-showcase-shortcode .rma-map-directory{padding:16px;border-radius:18px;border:1px solid rgba(15,47,74,.15);background:linear-gradient(180deg,#f7fbff 0%,#f2f8fc 100%);}
+					.rma-map-showcase-shortcode .rma-map-filters{display:grid;grid-template-columns:minmax(220px,1.45fr) minmax(180px,1fr) minmax(180px,1fr) minmax(170px,.95fr) minmax(170px,.9fr);gap:10px;align-items:stretch;margin:0 0 14px;padding:12px;border:1px solid #dbe7f3;border-radius:14px;background:rgba(255,255,255,.92);box-shadow:0 8px 20px rgba(15,47,74,.08)}
+					.rma-map-showcase-shortcode .rma-map-filters input,
+					.rma-map-showcase-shortcode .rma-map-filters select{height:44px;line-height:44px;background-color:#ffffff;border:none;border-radius:15px;border:1px solid #c8d9ea;padding:0 14px;color:#16324a;font-weight:600}
+					.rma-map-showcase-shortcode .rma-map-filters input:focus,
+					.rma-map-showcase-shortcode .rma-map-filters select:focus{outline:none;border-color:#7bad39;box-shadow:0 0 0 3px rgba(123,173,57,.18)}
+					.rma-map-showcase-shortcode .select2-container--default .select2-selection--single .select2-selection__rendered{line-height:43px;background-color:#ffffff;border:none;border-radius:15px;border:1px solid #c8d9ea}
+					.rma-map-showcase-shortcode .select2-container .select2-selection--single{height:44px;border:1px solid #c8d9ea;border-radius:15px;background:#fff}
+					.rma-map-showcase-shortcode .rma-map-filters [name="area"]{display:none !important}
+					.rma-map-showcase-shortcode .rma-map-state-chip{background:#f8fcff;border:1px solid #bcd2e6;border-radius:12px;color:#1a4668;font-weight:700;padding:6px 10px}
+					.rma-map-showcase-shortcode .rma-map-state-chip.is-active{background:linear-gradient(135deg,#dff3ff,#ecfff6);border-color:#7bad39;color:#0f2f4a}
+					.rma-map-showcase-shortcode .rma-map-filters .rma-map-apply{height:44px;line-height:44px;border-radius:12px;background:linear-gradient(135deg, #7bad39, #28f3a8);color:#fff;font-weight:800;letter-spacing:.2px;width:100%;white-space:nowrap}
+					.rma-map-showcase-shortcode .rma-map-feedback{margin:0 0 10px;padding:8px 10px;border-left:3px solid #7bad39;background:rgba(123,173,57,.08);border-radius:8px;color:#16324a;font-weight:600}
+					.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin path{fill:#16a34a !important;stroke:#0f7a36 !important;stroke-width:1.25 !important}
+					.rma-map-showcase-shortcode #rma-map-pins .rma-map-pin circle{fill:#ecfdf3 !important}
+					@media (max-width:1100px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(3,minmax(170px,1fr));}}
+					@media (max-width:760px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:repeat(2,minmax(150px,1fr));}}
+					@media (max-width:560px){.rma-map-showcase-shortcode .rma-map-filters{grid-template-columns:1fr;}}
+					.rma-map-showcase-shortcode .rma-map-brazil-grid{margin-top:0;}
+					.rma-map-showcase-shortcode .rma-map-states{justify-content:center;margin-top:14px;}
+					.rma-map-showcase-shortcode .rma-map-state-chip{min-width:56px;text-align:center;}
+				</style>
+				<?php echo $inner; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			</div>
+			<?php
+			return (string) ob_get_clean();
+		});
+	}
+	add_action('init', 'rma_fix_map_showcase_pin_render', 1000);
+}
